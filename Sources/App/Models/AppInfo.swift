@@ -16,16 +16,29 @@ final class AppInfo: Model, Content {
     @Field(key: "activity_name")
     var activityName: String
 
+    @Field(key: "signature")
+    var signature: String?
+
+    @Field(key: "count")
+    var count: Int?
+
     init() { }
 
-    init(id: UUID? = nil, appName: String, packageName: String, activityName: String) {
+    init(id: UUID? = nil, appName: String, packageName: String, activityName: String, signature: String? = nil, count: Int = 1) {
         self.id = id
         self.appName = appName
         self.packageName = packageName
         self.activityName = activityName
+        self.signature = signature
+        self.count = count
     }
 
     static func getExample() -> AppInfo {
-        AppInfo(id: UUID(), appName: "Example App", packageName: "com.example\(Int.random()).app", activityName: "example\(Int.random()).activity")
+        AppInfo(
+            id: UUID(), 
+            appName: "Example App", 
+            packageName: "com.example\(Int.random()).app", 
+            activityName: "example\(Int.random()).activity"
+        )
     }
 }
