@@ -7,6 +7,9 @@ final class AppInfo: Model, Content {
     @ID(key: .id)
     var id: UUID?
 
+    @Field(key: "app_name")
+    var appName: String
+
     @Field(key: "package_name")
     var packageName: String
 
@@ -15,9 +18,14 @@ final class AppInfo: Model, Content {
 
     init() { }
 
-    init(id: UUID? = nil, packageName: String, activityName: String) {
+    init(id: UUID? = nil, appName: String, packageName: String, activityName: String) {
         self.id = id
+        self.appName = appName
         self.packageName = packageName
         self.activityName = activityName
+    }
+
+    static func getExample() -> AppInfo {
+        AppInfo(id: UUID(), appName: "Example App", packageName: "com.example\(Int.random()).app", activityName: "example\(Int.random()).activity")
     }
 }
