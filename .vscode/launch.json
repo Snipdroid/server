@@ -25,6 +25,14 @@
             "program": "${workspaceFolder:Test}/.build/debug/TestPackageTests.xctest",
             "cwd": "${workspaceFolder:Test}",
             "preLaunchTask": "swift: Build All"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Test AppTracker",
+            "program": "${workspaceFolder:Test}/.build/debug/AppTrackerPackageTests.xctest",
+            "cwd": "${workspaceFolder:Test}",
+            "preLaunchTask": "swift: Build All"
         }
     ]
 }
