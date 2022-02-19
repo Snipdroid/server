@@ -1,0 +1,30 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug Run",
+            "program": "${workspaceFolder:Test}/.build/debug/Run",
+            "args": [],
+            "cwd": "${workspaceFolder:Test}",
+            "preLaunchTask": "swift: Build Debug Run"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Release Run",
+            "program": "${workspaceFolder:Test}/.build/release/Run",
+            "args": [],
+            "cwd": "${workspaceFolder:Test}",
+            "preLaunchTask": "swift: Build Release Run"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Test Test",
+            "program": "${workspaceFolder:Test}/.build/debug/TestPackageTests.xctest",
+            "cwd": "${workspaceFolder:Test}",
+            "preLaunchTask": "swift: Build All"
+        }
+    ]
+}
