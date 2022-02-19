@@ -14,11 +14,9 @@ public func configure(_ app: Application) throws {
         allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
     )
     let cors = CORSMiddleware(configuration: corsConfiguration)
-    let error = ErrorMiddleware.default(environment: app.environment)
-    // 清除现有的 middleware。
-    app.middleware = .init()
-    app.middleware.use(cors)
-    app.middleware.use(error)
+    app.middleware.use(cors, at: .beginning)
+
+    app.logger.logLevel = .info
 
     app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
 
