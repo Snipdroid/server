@@ -65,6 +65,7 @@ func routes(_ app: Application) throws {
 
         api.on(.GET, "getAll") { req -> EventLoopFuture<Page<AppInfo>> in 
             AppInfo.query(on: req.db)
+                .unique()
                 .paginate(for: req)
         }
 
