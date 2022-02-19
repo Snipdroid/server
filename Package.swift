@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Test",
+    name: "AppTracker",
     platforms: [
        .macOS(.v10_15)
     ],
