@@ -9,7 +9,7 @@ func routes(_ app: Application) throws {
     app.group("api") { api in
         api.on(.GET, "search") { req -> EventLoopFuture<Page<AppInfo>> in
             guard let searchText: String = req.query["q"] else {
-                throw Abort(.notFound)
+                throw Abort(.badRequest)
             }
             let searchTextList = searchText.split(separator: " ")
             app.logger.info("Search app info '\(searchTextList)'")
@@ -61,13 +61,31 @@ func routes(_ app: Application) throws {
 
         api.on(.DELETE, "remove") { req -> EventLoopFuture<String> in
             guard let id: UUID = req.query["id"] else {
-                throw Abort(.notModified)
+                throw Abort(.badRequest)
             }
 
             return AppInfo.query(on: req.db)
                 .filter(\.$id == id)
                 .delete()
-                .map { id.uuidString }
+                .map { "Deleted row of ID \(id)" }
+        }
+
+        api.on(.DELETE, "remove", ":signature") { req -> EventLoopFuture<String> in
+            guard let signature: String = req.parameters.get("signature") else {
+                throw Abort(.badRequest)
+            }
+
+            let result = AppInfo.query(on: req.db).filter(\.$signature == signature)
+
+            return result
+                .count()
+                .flatMap { count in
+                    return result
+                        .delete()
+                        .map {
+                            "Deleted all \(count) of signature \(signature)"
+                        }
+                }
         }
 
         api.on(.GET, "getExample") { req -> AppInfo in
