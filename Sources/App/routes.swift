@@ -80,7 +80,7 @@ func routes(_ app: Application) throws {
 
             return AppInfo.query(on: req.db)
                 .filter(\.$signature == signature)
-                .sort(\.$count)
+                .sort(\.$count, .descending)
                 .paginate(for: req)
         }
     }
