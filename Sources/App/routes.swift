@@ -36,16 +36,25 @@ func routes(_ app: Application) throws {
             let newAppInfo = try req.content.decode(AppInfo.self)
             newAppInfo.id = UUID()
 
-            return AppInfo.query(on: req.db)
+            let sameAppInfo = AppInfo.query(on: req.db)
                 .filter(\.$packageName == newAppInfo.packageName)
                 .filter(\.$activityName == newAppInfo.activityName)
+
+            // Update name
+            let _ = sameAppInfo.all()
+                .mapEach { oldAppInfo -> EventLoopFuture<AppInfo> in
+                    if oldAppInfo.appName == "" {
+                        oldAppInfo.appName = newAppInfo.appName
+                    } 
+                    return oldAppInfo.update(on: req.db).map { oldAppInfo }
+                }
+
+            // Update count
+            return sameAppInfo
                 .filter(\.$signature == newAppInfo.signature)
                 .first()
                 .flatMap { oldAppInfo -> EventLoopFuture<AppInfo> in
                     if let oldAppInfo = oldAppInfo { // existed
-                        if oldAppInfo.appName == "" { // if the old one does not have a name, update it.
-                            oldAppInfo.appName = newAppInfo.appName
-                        }
                         oldAppInfo.count! += 1
                         return oldAppInfo
                             .update(on: req.db)
