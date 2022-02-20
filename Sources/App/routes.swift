@@ -11,14 +11,23 @@ func routes(_ app: Application) throws {
             guard let searchText: String = req.query["q"] else {
                 throw Abort(.notFound)
             }
-            app.logger.info("Search app info '\(searchText)'")
+            let searchTextList = searchText.split(separator: " ")
+            app.logger.info("Search app info '\(searchTextList)'")
 
             return AppInfo.query(on: req.db)
                 .group(.or) { group in
-                    group
-                        .filter(\.$appName ~~ searchText)
-                        .filter(\.$packageName ~~ searchText)
-                        .filter(\.$activityName ~~ searchText)
+                    for searchText in searchTextList { // logic OR
+                        group
+                            .filter(\.$appName ~~ String(searchText))
+                            .filter(\.$packageName ~~ String(searchText))
+                            .filter(\.$activityName ~~ String(searchText))
+                    }
+
+                    // logic AND
+                    // group
+                    //     .filter(\.$appName ~~ searchText)
+                    //     .filter(\.$packageName ~~ searchText)
+                    //     .filter(\.$activityName ~~ searchText)
                 }
                 .paginate(for: req)
         }
