@@ -34,7 +34,9 @@ func routes(_ app: Application) throws {
                 .first()
                 .flatMap { oldAppInfo -> EventLoopFuture<AppInfo> in
                     if let oldAppInfo = oldAppInfo { // existed
-                        // oldAppInfo.count = oldAppInfo.count != nil ? oldAppInfo.count! + 1 : 1
+                        if oldAppInfo.appName == "" { // if the old one does not have a name, update it.
+                            oldAppInfo.appName = newAppInfo.appName
+                        }
                         oldAppInfo.count! += 1
                         return oldAppInfo
                             .update(on: req.db)
