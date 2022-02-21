@@ -48,7 +48,7 @@ func routes(_ app: Application) throws {
 
         api.on(.GET, "search", "regex") { req -> EventLoopFuture<Page<AppInfo>> in
 
-            guard let pattern: String = req.query["q"], let regex = try? NSRegularExpression(pattern: pattern) else {
+            guard let pattern: String = req.query["q"], let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
                 throw Abort(.badRequest)
             }
 
@@ -65,20 +65,20 @@ func routes(_ app: Application) throws {
                     let doMatch = [appInfo.appName, appInfo.activityName, appInfo.packageName] // Fields to match
                         .map { field -> Bool in
                             let stringRange = NSRange(location: 0, length: field.utf16.count)
-                            return regex.firstMatch(in: appInfo.appName, range: stringRange) != nil // check if current field matches
+                            return regex.firstMatch(in: field, range: stringRange) != nil // check if current field matches
                         }
                         .contains(true) // check if any field matches
                     if doMatch { return appInfo } else { return nil} // if any does, return appInfo
                 }
                 .map { appInfoList -> Page<AppInfo> in
                     let total = appInfoList.count 
-                    let per = page.per
-                    let requestPage: Int = min(Int(ceil(Float(total) / Float(per))), page.page)
-                    let left = per * (requestPage - 1)
-                    let right = left + Int(min(per - 1, total - left - 1))
+                    let per = page.per 
+                    let requestPage: Int = min(Int(ceil(Float(total) / Float(per))), page.page) 
+                    let left = max(per * (requestPage - 1), 0) 
+                    let right = min(left + per, total)
                     
                     return Page(
-                        items: Array(appInfoList[left...right]), 
+                        items: Array(appInfoList[left..<right]), 
                         metadata: PageMetadata(
                             page: page.page, 
                             per: page.per, 
