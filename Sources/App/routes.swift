@@ -12,7 +12,7 @@ func routes(_ app: Application) throws {
                 throw Abort(.badRequest)
             }
             let searchTextMatrix = searchText.split(separator: " ").map { $0.split(separator: "+") }
-            app.logger.info("Search app info '\(searchTextMatrix)'")
+            app.logger.info("Search app '\(searchTextMatrix)'")
 
             return AppInfo.query(on: req.db)
                 .filter(\.$signature == "")
@@ -56,6 +56,8 @@ func routes(_ app: Application) throws {
                 req.logger.error("Failed to decode page metadata")
                 throw Abort(.badRequest)
             }
+
+            app.logger.info("Regex search app \(pattern)")
 
             return AppInfo.query(on: req.db)
                 .all()
