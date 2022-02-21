@@ -15,6 +15,7 @@ func routes(_ app: Application) throws {
             app.logger.info("Search app info '\(searchTextList)'")
 
             return AppInfo.query(on: req.db)
+                .filter(\.$signature == "")
                 .group(.or) { group in
                     for searchText in searchTextList { // logic OR
                         group
@@ -35,6 +36,7 @@ func routes(_ app: Application) throws {
         api.on(.POST, "new") { req -> EventLoopFuture<AppInfo> in
             let newAppInfo = try req.content.decode(AppInfo.self)
             newAppInfo.id = UUID()
+            newAppInfo.signature = newAppInfo.signature == "app-tracker" ? "" : newAppInfo.signature
 
             let sameAppInfo = AppInfo.query(on: req.db)
                 .filter(\.$packageName == newAppInfo.packageName)
@@ -48,24 +50,50 @@ func routes(_ app: Application) throws {
                     } 
                     return oldAppInfo.update(on: req.db).map { oldAppInfo }
                 }
+            
 
-            // Update count
-            return sameAppInfo
+            // look up existance -(T)> add in
+            //                   -(F)> do nothing
+            //                            ->    has signature  -(F)>    return
+            //                                                 -(T)>    look up existance -(T)> count ++
+            //                                                                            -(F)> add in
+
+            // Erase signature and copy
+            let signatureErased = sameAppInfo
+                .filter(\.$signature == "")
+                .first()
+                .flatMap { oldAppInfo -> EventLoopFuture<AppInfo> in
+                    if let oldAppInfo = oldAppInfo {
+                        // if exists, no nothing
+                        // since the count does not matter
+                        return oldAppInfo.update(on: req.db).map { oldAppInfo }
+                    } else {
+                        let signatureErasedAppInfo = newAppInfo
+                        signatureErasedAppInfo.signature = "" // Erase signature
+                        return signatureErasedAppInfo.create(on: req.db).map { signatureErasedAppInfo }
+                    }
+                }
+
+            if newAppInfo.signature == "" {
+                return sameAppInfo
                 .filter(\.$signature == newAppInfo.signature)
                 .first()
                 .flatMap { oldAppInfo -> EventLoopFuture<AppInfo> in
-                    if let oldAppInfo = oldAppInfo { // existed
+                    if let oldAppInfo = oldAppInfo {
+                        // if exists, update count
                         oldAppInfo.count! += 1
-                        return oldAppInfo
-                            .update(on: req.db)
-                            .map { oldAppInfo }
-                    } else { // not existed
+                        return oldAppInfo.update(on: req.db).map { oldAppInfo }
+                    } else {
+                        // not exist
                         newAppInfo.count = 1
                         return newAppInfo
                             .create(on: req.db)
                             .map { newAppInfo }
                     }
                 }
+            } else {
+                return signatureErased
+            }
         }
 
         api.on(.DELETE, "remove") { req -> EventLoopFuture<String> in
@@ -119,5 +147,23 @@ func routes(_ app: Application) throws {
                 .sort(\.$count, .descending)
                 .paginate(for: req)
         }
+
+        // api.on(.GET, "cleanup") { req -> EventLoopFuture<[AppInfo]> in
+        //     return AppInfo.query(on: req.db)
+        //         .all()
+        //         .flatMapEachCompact(on: req.eventLoop) { appInfo -> EventLoopFuture<AppInfo?> in
+        //             AppInfo.query(on: req.db)
+        //                 .filter(\.$packageName == appInfo.packageName)
+        //                 .filter(\.$activityName == appInfo.activityName)
+        //                 .count()
+        //                 .map { count in
+        //                     if count > 1 {
+        //                         return appInfo
+        //                     } else {
+        //                         return nil
+        //                     }
+        //                 }
+        //         }                
+        // }
     }
 }
