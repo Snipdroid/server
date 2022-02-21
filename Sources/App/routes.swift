@@ -11,18 +11,31 @@ func routes(_ app: Application) throws {
             guard let searchText: String = req.query["q"] else {
                 throw Abort(.badRequest)
             }
-            let searchTextList = searchText.split(separator: " ")
-            app.logger.info("Search app info '\(searchTextList)'")
+            let searchTextMatrix = searchText.split(separator: " ").map { $0.split(separator: "+") }
+            app.logger.info("Search app info '\(searchTextMatrix)'")
 
             return AppInfo.query(on: req.db)
                 .filter(\.$signature == "")
                 .group(.or) { group in
-                    for searchText in searchTextList { // logic OR
-                        group
-                            .filter(\.$appName ~~ String(searchText))
-                            .filter(\.$packageName ~~ String(searchText))
-                            .filter(\.$activityName ~~ String(searchText))
+                    for col in searchTextMatrix {
+                        group.group(.and) { subgroup in
+                            for word in col {
+                                subgroup.group(.or) { subsubgroup in
+                                    subsubgroup
+                                        .filter(\.$appName ~~ String(word))
+                                        .filter(\.$packageName ~~ String(word))
+                                        .filter(\.$activityName ~~ String(word))
+                                }
+                            }
+                        }
                     }
+
+                    // for searchText in searchTextList { // logic OR
+                    //     group
+                    //          .filter(\.$appName ~~ String(searchText))
+                    //          .filter(\.$packageName ~~ String(searchText))
+                    //          .filter(\.$activityName ~~ String(searchText))
+                    // }
 
                     // logic AND
                     // group
