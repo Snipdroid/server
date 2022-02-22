@@ -17,14 +17,14 @@ final class AppInfo: Model, Content {
     var activityName: String
 
     @Field(key: "signature")
-    var signature: String?
+    var signature: String
 
     @Field(key: "count")
     var count: Int?
 
     init() { }
 
-    init(id: UUID? = nil, appName: String, packageName: String, activityName: String, signature: String? = nil, count: Int = 1) {
+    init(id: UUID? = nil, appName: String, packageName: String, activityName: String, signature: String = "", count: Int = 1) {
         self.id = id
         self.appName = appName
         self.packageName = packageName
