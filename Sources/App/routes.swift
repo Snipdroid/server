@@ -7,14 +7,14 @@ func routes(_ app: Application) throws {
     }
 
     app.group("api") { api in
-        api.on(.GET, "search") { req -> EventLoopFuture<Page<AppInfo>> in
+        api.on(.GET, "search") { req async throws -> Page<AppInfo> in
             guard let searchText: String = req.query["q"] else {
                 throw Abort(.badRequest)
             }
             let searchTextMatrix = searchText.split(separator: " ").map { $0.split(separator: "+") }
             app.logger.info("Search app '\(searchTextMatrix)'")
 
-            return AppInfo.query(on: req.db)
+            return try await AppInfo.query(on: req.db)
                 .filter(\.$signature == "")
                 .group(.or) { group in
                     for col in searchTextMatrix {
@@ -29,19 +29,6 @@ func routes(_ app: Application) throws {
                             }
                         }
                     }
-
-                    // for searchText in searchTextList { // logic OR
-                    //     group
-                    //          .filter(\.$appName ~~ String(searchText))
-                    //          .filter(\.$packageName ~~ String(searchText))
-                    //          .filter(\.$activityName ~~ String(searchText))
-                    // }
-
-                    // logic AND
-                    // group
-                    //     .filter(\.$appName ~~ searchText)
-                    //     .filter(\.$packageName ~~ searchText)
-                    //     .filter(\.$activityName ~~ searchText)
                 }
                 .paginate(for: req)
         }
@@ -71,20 +58,7 @@ func routes(_ app: Application) throws {
                     if doMatch { return appInfo } else { return nil} // if any does, return appInfo
                 }
                 .map { appInfoList -> Page<AppInfo> in
-                    let total = appInfoList.count 
-                    let per = page.per 
-                    let requestPage: Int = min(Int(ceil(Float(total) / Float(per))), page.page) 
-                    let left = max(per * (requestPage - 1), 0) 
-                    let right = min(left + per, total)
-                    
-                    return Page(
-                        items: Array(appInfoList[left..<right]), 
-                        metadata: PageMetadata(
-                            page: page.page, 
-                            per: page.per, 
-                            total: appInfoList.count
-                        )
-                    )
+                    return appInfoList.paginate(for: page)
                 }
         }
 
@@ -151,74 +125,47 @@ func routes(_ app: Application) throws {
             }
         }
 
-        api.on(.DELETE, "remove") { req -> EventLoopFuture<String> in
+        api.on(.DELETE, "remove") { req async throws -> RequestResult in
             guard let id: UUID = req.query["id"] else {
                 throw Abort(.badRequest)
             }
 
-            return AppInfo.query(on: req.db)
+            try await AppInfo.query(on: req.db)
                 .filter(\.$id == id)
                 .delete()
-                .map { "Deleted row of ID \(id)" }
+            
+            return RequestResult(code: 200, isSuccess: true, message: "Deleted row of ID \(id)")
         }
 
-        api.on(.DELETE, "remove", ":signature") { req -> EventLoopFuture<String> in
+        api.on(.DELETE, "remove", ":signature") { req async throws -> RequestResult in
             guard let signature: String = req.parameters.get("signature") else {
                 throw Abort(.badRequest)
             }
 
-            let result = AppInfo.query(on: req.db).filter(\.$signature == signature)
+            let filterResult =  AppInfo.query(on: req.db).filter(\.$signature == signature)
+            let count = try await filterResult.count()
+            try await filterResult.delete()
 
-            return result
-                .count()
-                .flatMap { count in
-                    return result
-                        .delete()
-                        .map {
-                            "Deleted all \(count) of signature \(signature)"
-                        }
-                }
+            return .init(code: 200, isSuccess: true, message: "Deleted all \(count) of signature \(signature)")
         }
 
         api.on(.GET, "getExample") { req -> AppInfo in
             return AppInfo.getExample()
         }
 
-        api.on(.GET, "getAll") { req -> EventLoopFuture<Page<AppInfo>> in 
-            AppInfo.query(on: req.db)
-                .unique()
-                .paginate(for: req)
+        api.on(.GET, "getAll") { req async throws -> Page<AppInfo> in
+            return try await AppInfo.query(on: req.db).paginate(for: req)
         }
 
-        api.on(.GET, "getAll", ":signature") { req -> EventLoopFuture<Page<AppInfo>> in 
-
+        api.on(.GET, "getAll", ":signature") { req async throws -> Page<AppInfo> in
             guard let signature = req.parameters.get("signature") else { 
-                // Never happens
                 throw Abort(.badRequest)
             }
 
-            return AppInfo.query(on: req.db)
-                .filter(\.$signature == signature)
-                .sort(\.$count, .descending)
-                .paginate(for: req)
+            return try await AppInfo.query(on: req.db)
+                                .filter(\.$signature == signature)
+                                .sort(\.$count, .descending)
+                                .paginate(for: req)
         }
-
-        // api.on(.GET, "cleanup") { req -> EventLoopFuture<[AppInfo]> in
-        //     return AppInfo.query(on: req.db)
-        //         .all()
-        //         .flatMapEachCompact(on: req.eventLoop) { appInfo -> EventLoopFuture<AppInfo?> in
-        //             AppInfo.query(on: req.db)
-        //                 .filter(\.$packageName == appInfo.packageName)
-        //                 .filter(\.$activityName == appInfo.activityName)
-        //                 .count()
-        //                 .map { count in
-        //                     if count > 1 {
-        //                         return appInfo
-        //                     } else {
-        //                         return nil
-        //                     }
-        //                 }
-        //         }                
-        // }
     }
 }
