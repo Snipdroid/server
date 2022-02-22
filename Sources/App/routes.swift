@@ -62,68 +62,48 @@ func routes(_ app: Application) throws {
                 }
         }
 
-        api.on(.POST, "new") { req -> EventLoopFuture<AppInfo> in
-            let newAppInfo = try req.content.decode(AppInfo.self)
-            newAppInfo.id = UUID()
-            newAppInfo.signature = newAppInfo.signature == "app-tracker" ? "" : newAppInfo.signature
-
-            let sameAppInfo = AppInfo.query(on: req.db)
-                .filter(\.$packageName == newAppInfo.packageName)
-                .filter(\.$activityName == newAppInfo.activityName)
-
-            // Update name
-            let _ = sameAppInfo.all()
-                .mapEach { oldAppInfo -> EventLoopFuture<AppInfo> in
-                    if oldAppInfo.appName == "" {
-                        oldAppInfo.appName = newAppInfo.appName
-                    } 
-                    return oldAppInfo.update(on: req.db).map { oldAppInfo }
-                }
+        api.on(.POST, "new") { req async throws -> AppInfo in
+            let newAppInfo = try { () -> AppInfo in
+                let appInfo = try req.content.decode(AppInfo.self)
+                appInfo.count = 1
+                return appInfo
+            }()
             
+            let withSignature = newAppInfo.signature != "" && newAppInfo.signature != "app-tracker"
 
-            // look up existance -(T)> add in
-            //                   -(F)> do nothing
-            //                            ->    has signature  -(F)>    return
-            //                                                 -(T)>    look up existance -(T)> count ++
-            //                                                                            -(F)> add in
-
-            // Erase signature and copy
-            let signatureErased = sameAppInfo
-                .filter(\.$signature == "")
-                .first()
-                .flatMap { oldAppInfo -> EventLoopFuture<AppInfo> in
-                    if let oldAppInfo = oldAppInfo {
-                        // if exists, no nothing
-                        // since the count does not matter
-                        return oldAppInfo.update(on: req.db).map { oldAppInfo }
-                    } else {
-                        let signatureErasedAppInfo = newAppInfo.eraseSignature()
-                        return signatureErasedAppInfo.create(on: req.db).map { signatureErasedAppInfo }
-                    }
-                }
-
-            if newAppInfo.signature != "" {
-                return AppInfo.query(on: req.db)
+            try await AppInfo.query(on: req.db)
                 .filter(\.$packageName == newAppInfo.packageName)
                 .filter(\.$activityName == newAppInfo.activityName)
-                .filter(\.$signature == newAppInfo.signature)
-                .first()
-                .flatMap { oldAppInfo -> EventLoopFuture<AppInfo> in
-                    if let oldAppInfo = oldAppInfo {
-                        // if exists, update count
-                        oldAppInfo.count! += 1
-                        return oldAppInfo.update(on: req.db).map { oldAppInfo }
-                    } else {
-                        // not exist
-                        newAppInfo.count = 1
-                        return newAppInfo
-                            .create(on: req.db)
-                            .map { newAppInfo }
-                    }
+                .filter(\.$appName == "")
+                .all()
+                .asyncMap {
+                    $0.appName = newAppInfo.appName
+                    try await $0.save(on: req.db)
                 }
-            } else {
-                return signatureErased
+                .end()
+
+            if withSignature {
+                if let old = try await AppInfo.query(on: req.db)
+                    .filter(\.$packageName == newAppInfo.packageName)
+                    .filter(\.$activityName == newAppInfo.activityName)
+                    .filter(\.$signature == newAppInfo.signature)
+                    .first() {
+                        old.count! += 1
+                        try await old.update(on: req.db)
+                    } else {
+                        try await newAppInfo.create(on: req.db)
+                    }
             }
+
+            if try await AppInfo.query(on: req.db)
+                .filter(\.$packageName == newAppInfo.packageName)
+                .filter(\.$activityName == newAppInfo.activityName)
+                .filter(\.$signature == "")
+                .first() == nil {
+                    try await newAppInfo.eraseSignature().create(on: req.db)
+                }
+
+            return newAppInfo
         }
 
         api.on(.DELETE, "remove") { req async throws -> RequestResult in
