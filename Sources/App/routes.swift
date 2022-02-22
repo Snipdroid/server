@@ -97,14 +97,15 @@ func routes(_ app: Application) throws {
                         // since the count does not matter
                         return oldAppInfo.update(on: req.db).map { oldAppInfo }
                     } else {
-                        let signatureErasedAppInfo = newAppInfo
-                        signatureErasedAppInfo.signature = "" // Erase signature
+                        let signatureErasedAppInfo = newAppInfo.eraseSignature()
                         return signatureErasedAppInfo.create(on: req.db).map { signatureErasedAppInfo }
                     }
                 }
 
-            if newAppInfo.signature == "" {
-                return sameAppInfo
+            if newAppInfo.signature != "" {
+                return AppInfo.query(on: req.db)
+                .filter(\.$packageName == newAppInfo.packageName)
+                .filter(\.$activityName == newAppInfo.activityName)
                 .filter(\.$signature == newAppInfo.signature)
                 .first()
                 .flatMap { oldAppInfo -> EventLoopFuture<AppInfo> in

@@ -41,4 +41,8 @@ final class AppInfo: Model, Content {
             activityName: "example\(Int.random()).activity"
         )
     }
+
+    func eraseSignature() -> AppInfo {
+        .init(id: UUID(), appName: self.appName, packageName: self.packageName, activityName: self.activityName, signature: "", count: 1)
+    }
 }
