@@ -107,15 +107,26 @@ func routes(_ app: Application) throws {
         }
 
         api.on(.DELETE, "remove") { req async throws -> RequestResult in
-            guard let id: UUID = req.query["id"] else {
-                throw Abort(.badRequest)
-            }
 
-            try await AppInfo.query(on: req.db)
-                .filter(\.$id == id)
-                .delete()
+            let idList: [UUID] = try {
+                if let idList = try? req.content.decode([UUID].self) {
+                    return idList
+                } else if let id: UUID = req.query["id"] {
+                    return [id]
+                } else {
+                    throw Abort(.badRequest)
+                }
+            }()
             
-            return RequestResult(code: 200, isSuccess: true, message: "Deleted row of ID \(id)")
+
+            let filterResult = try await AppInfo.query(on: req.db)
+                .filter(\.$id ~~ idList)
+                .all()
+                
+            let count = filterResult.count
+            try await filterResult.delete(on: req.db)
+            
+            return RequestResult(code: 200, isSuccess: true, message: "Deleted \(count) rows.")
         }
 
         api.on(.DELETE, "remove", ":signature") { req async throws -> RequestResult in
