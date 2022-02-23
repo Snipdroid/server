@@ -33,9 +33,9 @@ func routes(_ app: Application) throws {
                 .paginate(for: req)
         }
 
-        api.on(.GET, "search", "regex") { req -> EventLoopFuture<Page<AppInfo>> in
+        api.on(.GET, "search", "regex") { req async throws -> Page<AppInfo> in
 
-            guard let pattern: String = req.query["q"], let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
+            guard let pattern: String = req.query["q"] else {
                 throw Abort(.badRequest)
             }
 
@@ -44,22 +44,18 @@ func routes(_ app: Application) throws {
                 throw Abort(.badRequest)
             }
 
-            app.logger.info("Regex search app \(pattern)")
+            app.logger.info("Regex search app \(pattern)") 
+            
+            var filterResult = [AppInfo]()
+            for appInfo in try await AppInfo.query(on: req.db).all() {
+                if try appInfo.regexSearch(\.appName, with: pattern) ||
+                appInfo.regexSearch(\.packageName, with: pattern) ||
+                appInfo.regexSearch(\.activityName, with: pattern) {
+                    filterResult.append(appInfo)
+                }
+            }
 
-            return AppInfo.query(on: req.db)
-                .all()
-                .mapEachCompact { appInfo -> AppInfo? in
-                    let doMatch = [appInfo.appName, appInfo.activityName, appInfo.packageName] // Fields to match
-                        .map { field -> Bool in
-                            let stringRange = NSRange(location: 0, length: field.utf16.count)
-                            return regex.firstMatch(in: field, range: stringRange) != nil // check if current field matches
-                        }
-                        .contains(true) // check if any field matches
-                    if doMatch { return appInfo } else { return nil} // if any does, return appInfo
-                }
-                .map { appInfoList -> Page<AppInfo> in
-                    return appInfoList.paginate(for: page)
-                }
+            return filterResult.paginate(for: page)
         }
 
         api.on(.POST, "new") { req async throws -> AppInfo in

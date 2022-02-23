@@ -45,4 +45,10 @@ final class AppInfo: Model, Content {
     func eraseSignature() -> AppInfo {
         .init(id: UUID(), appName: self.appName, packageName: self.packageName, activityName: self.activityName, signature: "", count: 1)
     }
+
+    func regexSearch(_ key: KeyPath<AppInfo, String>, with pattern: String) throws -> Bool {
+        let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+        let stringRange = NSRange(location: 0, length: self[keyPath: key].utf16.count)
+        return regex.firstMatch(in: self[keyPath: key], range: stringRange) != nil
+    }
 }
