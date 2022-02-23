@@ -150,6 +150,7 @@ func routes(_ app: Application) throws {
                 return .init(code: 400, isSuccess: false, message: "App info with requested ID not found.")
             }
             appInfoToPatch.appName = patcher.appName
+            try await appInfoToPatch.update(on: req.db)
 
             return .init(code: 200, isSuccess: true, message: "Update succeeded.")
         }
