@@ -137,6 +137,23 @@ func routes(_ app: Application) throws {
             return .init(code: 200, isSuccess: true, message: "Deleted all \(count) of signature \(signature)")
         }
 
+        api.on(.PATCH, "update") { req async throws -> RequestResult in
+            guard let patcher = try? req.content.decode(AppInfo.self) else {
+                throw Abort(.badRequest)
+            }
+
+            guard let id = patcher.id else {
+                return .init(code: 400, isSuccess: false, message: "Patch needs and id.")
+            }
+
+            guard let appInfoToPatch = try await AppInfo.query(on: req.db).filter(\.$id == id).first() else {
+                return .init(code: 400, isSuccess: false, message: "App info with requested ID not found.")
+            }
+            appInfoToPatch.appName = patcher.appName
+
+            return .init(code: 200, isSuccess: true, message: "Update succeeded.")
+        }
+
         api.on(.GET, "getExample") { req -> AppInfo in
             return AppInfo.getExample()
         }
