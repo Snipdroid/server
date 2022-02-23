@@ -11,7 +11,7 @@ func routes(_ app: Application) throws {
             guard let searchText: String = req.query["q"] else {
                 throw Abort(.badRequest)
             }
-            let searchTextMatrix = searchText.split(separator: " ").map { $0.split(separator: "+") }
+            let searchTextMatrix = searchText.split(separator: "|").map { $0.split(separator: " ") }
             app.logger.info("Search app '\(searchTextMatrix)'")
 
             return try await AppInfo.query(on: req.db)
