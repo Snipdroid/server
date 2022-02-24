@@ -189,17 +189,14 @@ func routes(_ app: Application) throws {
             let jsonRegex = try NSRegularExpression(pattern: #"<script\stype="application\/ld\+json"\snonce="(?:\S+)">([^<]+)<\/script>"#, options: .anchorsMatchLines)
             let htmlRange = NSRange(location: 0, length: html.utf16.count)
             let matches = jsonRegex.matches(in: html, range: htmlRange)
-            var results: [String] = []
             for match in matches {
                 for rangeIndex in 1 ..< match.numberOfRanges {
-                    results.append((html as NSString).substring(with: match.range(at: rangeIndex)))
+                    let data = (html as NSString).substring(with: match.range(at: rangeIndex)).data(using: .utf8)!
+                    return try JSONDecoder().decode(PlayApp.self, from: data)
                 }
-            }
+            }            
 
-            guard let firstMatch = results.first else { throw Abort(.notFound)}
-            let data = firstMatch.data(using: .utf8)!
-
-            return try JSONDecoder().decode(PlayApp.self, from: data)
+            return PlayApp.placeholder
         }
     }
 }
