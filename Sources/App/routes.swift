@@ -2,7 +2,7 @@ import Fluent
 import Vapor
 
 func routes(_ app: Application) throws {
-    app.get { req in
+    app.get { req async throws -> String in
         return "Yes! It's up and running!"
     }
 
@@ -172,6 +172,34 @@ func routes(_ app: Application) throws {
                                 .filter(\.$signature == signature)
                                 .sort(\.$count, .descending)
                                 .paginate(for: req)
+        }
+
+        api.on(.GET, "icon") { req async throws -> PlayApp in
+            guard let appId: String = req.query["appId"] else { throw Abort(.badRequest) }
+            let response = try await req.client.get("https://play.google.com/store/apps/details?id=\(appId)&hl=cn&gl=us")
+            
+            guard var body = response.body else {
+                throw(Abort(.internalServerError))
+            }
+
+            guard let html = body.readString(length: body.readableBytes) else {
+                throw Abort(.internalServerError)
+            }
+
+            let jsonRegex = try NSRegularExpression(pattern: #"<script\stype="application\/ld\+json"\snonce="(?:\S+)">([^<]+)<\/script>"#, options: .anchorsMatchLines)
+            let htmlRange = NSRange(location: 0, length: html.utf16.count)
+            let matches = jsonRegex.matches(in: html, range: htmlRange)
+            var results: [String] = []
+            for match in matches {
+                for rangeIndex in 1 ..< match.numberOfRanges {
+                    results.append((html as NSString).substring(with: match.range(at: rangeIndex)))
+                }
+            }
+
+            guard let firstMatch = results.first else { throw Abort(.notFound)}
+            let data = firstMatch.data(using: .utf8)!
+
+            return try JSONDecoder().decode(PlayApp.self, from: data)
         }
     }
 }
