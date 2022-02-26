@@ -176,7 +176,7 @@ func routes(_ app: Application) throws {
 
         api.on(.GET, "icon") { req async throws -> PlayApp in
             guard let appId: String = req.query["appId"] else { throw Abort(.badRequest) }
-            let response = try await req.client.get("https://play.google.com/store/apps/details?id=\(appId)&hl=cn&gl=us")
+            let response = try await req.client.get("https://play.google.com/store/apps/details?id=\(appId)&hl=zh&gl=us")
             
             guard var body = response.body else {
                 throw(Abort(.internalServerError))
