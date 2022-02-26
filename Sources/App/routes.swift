@@ -175,26 +175,45 @@ func routes(_ app: Application) throws {
         }
 
         api.on(.GET, "icon") { req async throws -> PlayApp in
-            guard let appId: String = req.query["appId"] else { throw Abort(.badRequest) }
-            let response = try await req.client.get("https://play.google.com/store/apps/details?id=\(appId)&hl=zh&gl=us")
-            
-            guard var body = response.body else {
-                throw(Abort(.internalServerError))
-            }
+            guard let appId: String = req.query["appId"],
+                let packageName = appId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+            else { throw Abort(.badRequest) }
 
-            guard let html = body.readString(length: body.readableBytes) else {
-                throw Abort(.internalServerError)
+            // Google Play
+
+            var response = try await req.client.get("https://play.google.com/store/apps/details?id=\(packageName)&hl=zh&gl=us")
+            
+            guard var body = response.body, let html = body.readString(length: body.readableBytes) else {
+                throw(Abort(.internalServerError))
             }
 
             let jsonRegex = try NSRegularExpression(pattern: #"<script\stype="application\/ld\+json"\snonce="(?:\S+)">([^<]+)<\/script>"#, options: .anchorsMatchLines)
             let htmlRange = NSRange(location: 0, length: html.utf16.count)
-            let matches = jsonRegex.matches(in: html, range: htmlRange)
+            var matches = jsonRegex.matches(in: html, range: htmlRange)
             for match in matches {
                 for rangeIndex in 1 ..< match.numberOfRanges {
                     let data = (html as NSString).substring(with: match.range(at: rangeIndex)).data(using: .utf8)!
                     return try JSONDecoder().decode(PlayApp.self, from: data)
                 }
             }            
+
+            // Coolapk
+
+            response = try await req.client.get("https://www.coolapk.com/apk/\(packageName)")
+
+            guard var body = response.body, let html = body.readString(length: body.readableBytes) else {
+                throw(Abort(.internalServerError))
+            }
+
+            let iconUrlRegex = try NSRegularExpression(pattern: #"<img\ssrc="(http:\/\/image\.coolapk\.com\/apk_logo\S+)\s*">"#, options: .anchorsMatchLines)
+            matches = iconUrlRegex.matches(in: html, range: htmlRange)
+            for match in matches {
+                for rangeIndex in 1..<match.numberOfRanges {
+                    let data = (html as NSString).substring(with: match.range(at: rangeIndex)).data(using: .utf8)!
+                    let urlString = String(data: data, encoding: .utf8)!
+                    return .init(name: "", url: "", image: urlString)
+                }
+            }
 
             return PlayApp.placeholder
         }
