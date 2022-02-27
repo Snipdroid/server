@@ -174,7 +174,7 @@ func routes(_ app: Application) throws {
                                 .paginate(for: req)
         }
 
-        api.on(.GET, "icon") { req async throws -> PlayApp in
+        api.on(.GET, "icon") { req async throws -> AppLogo in
             guard let appId: String = req.query["appId"],
                 let packageName = appId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
             else { throw Abort(.badRequest) }
@@ -188,12 +188,12 @@ func routes(_ app: Application) throws {
             }
 
             let jsonRegex = try NSRegularExpression(pattern: #"<script\stype="application\/ld\+json"\snonce="(?:\S+)">([^<]+)<\/script>"#, options: .anchorsMatchLines)
-            let htmlRange = NSRange(location: 0, length: html.utf16.count)
+            var htmlRange = NSRange(location: 0, length: html.utf16.count)
             var matches = jsonRegex.matches(in: html, range: htmlRange)
             for match in matches {
                 for rangeIndex in 1 ..< match.numberOfRanges {
                     let data = (html as NSString).substring(with: match.range(at: rangeIndex)).data(using: .utf8)!
-                    return try JSONDecoder().decode(PlayApp.self, from: data)
+                    return try JSONDecoder().decode(AppLogo.self, from: data).wrapped()
                 }
             }            
 
@@ -204,18 +204,18 @@ func routes(_ app: Application) throws {
             guard var body = response.body, let html = body.readString(length: body.readableBytes) else {
                 throw(Abort(.internalServerError))
             }
-
-            let iconUrlRegex = try NSRegularExpression(pattern: #"<img\ssrc="(http:\/\/image\.coolapk\.com\/apk_logo\S+)\s*">"#, options: .anchorsMatchLines)
+            htmlRange = NSRange(location: 0, length: html.utf16.count)
+            let iconUrlRegex = try NSRegularExpression(pattern: #"(http:\/\/pp.myapp.com\/ma_icon\/0\/[a-z0-9_]+\/256)"#, options: .anchorsMatchLines)
             matches = iconUrlRegex.matches(in: html, range: htmlRange)
             for match in matches {
                 for rangeIndex in 1..<match.numberOfRanges {
                     let data = (html as NSString).substring(with: match.range(at: rangeIndex)).data(using: .utf8)!
                     let urlString = String(data: data, encoding: .utf8)!
-                    return .init(name: "", url: "", image: urlString)
+                    return .init(name: "", url: "", image: urlString).wrapped()
                 }
             }
 
-            return PlayApp.placeholder
+            return AppLogo.placeholder
         }
     }
 }
