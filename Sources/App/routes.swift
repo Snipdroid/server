@@ -30,6 +30,7 @@ func routes(_ app: Application) throws {
                         }
                     }
                 }
+                .sort(\.$appName, .ascending)
                 .paginate(for: req)
         }
 
