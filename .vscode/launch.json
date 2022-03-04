@@ -4,18 +4,18 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug Run",
-            "program": "${workspaceFolder:Test}/.build/debug/Run",
+            "program": "${workspaceFolder:App-Tracker-Server}/.build/debug/Run",
             "args": [],
-            "cwd": "${workspaceFolder:Test}",
+            "cwd": "${workspaceFolder:App-Tracker-Server}",
             "preLaunchTask": "swift: Build Debug Run"
         },
         {
             "type": "lldb",
             "request": "launch",
             "name": "Release Run",
-            "program": "${workspaceFolder:Test}/.build/release/Run",
+            "program": "${workspaceFolder:App-Tracker-Server}/.build/release/Run",
             "args": [],
-            "cwd": "${workspaceFolder:Test}",
+            "cwd": "${workspaceFolder:App-Tracker-Server}",
             "preLaunchTask": "swift: Build Release Run"
         },
         {
@@ -30,8 +30,8 @@
             "type": "lldb",
             "request": "launch",
             "name": "Test AppTracker",
-            "program": "${workspaceFolder:Test}/.build/debug/AppTrackerPackageTests.xctest",
-            "cwd": "${workspaceFolder:Test}",
+            "program": "${workspaceFolder:App-Tracker-Server}/.build/debug/AppTrackerPackageTests.xctest",
+            "cwd": "${workspaceFolder:App-Tracker-Server}",
             "preLaunchTask": "swift: Build All"
         }
     ]

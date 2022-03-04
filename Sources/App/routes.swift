@@ -6,6 +6,8 @@ func routes(_ app: Application) throws {
         return "Yes! It's up and running!"
     }
 
+    try app.register(collection: AppInfoController())
+
     app.group("api") { api in
         api.on(.GET, "search") { req async throws -> Page<AppInfo> in
             guard let searchText: String = req.query["q"] else {
