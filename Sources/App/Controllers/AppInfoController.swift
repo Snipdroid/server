@@ -11,7 +11,7 @@ struct AppInfoController: RouteCollection {
         appInfos.patch(use: patch)
     }
 
-    func patch(req: Request) async throws -> RequestResult  {
+    func patch(req: Request) async throws -> RequestResult {
         guard let patcher = try? req.content.decode(AppInfo.self) else {
             throw Abort(.badRequest)
         }
