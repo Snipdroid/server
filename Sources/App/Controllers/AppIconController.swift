@@ -16,14 +16,7 @@ struct AppIconController: RouteCollection {
             throw Abort(.badRequest)
         }
 
-        guard var buffer = try? await req.fileio.collectFile(at: "data/icons/\(packageName).jpg"),
-            let data = buffer.readData(length: buffer.readableBytes) else {
-            throw Abort(.notFound)
-        }
-        
-        let headers = HTTPHeaders()
-
-        return .init(status: .ok, headers: headers, body: .init(data: data))
+        return req.fileio.streamFile(at: "data/icons/\(packageName).jpg")
     }
 
     func newIcon(req: Request) async throws -> RequestResult {

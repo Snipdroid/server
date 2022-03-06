@@ -17,13 +17,11 @@ func routes(_ app: Application) throws {
 
         // Local database
         if let buffer = try? await req.fileio.collectFile(at: "data/icons/\(packageName).jpg"), buffer.readableBytes > 0 {
+            req.logger.info("Find local icon file.")
             return .init(name: "", url: "", image: "https://bot.k2t3k.tk/api/appIcon?packageName=\(packageName)")
-        } else {
-            req.logger.info("No local icon file. Fetching online.")
         }
 
         // Coolapk
-        req.logger.info("Fetching app icon from coolapk.com")
         var response = try await req.client.get("https://www.coolapk.com/apk/\(packageName)")
 
         if var body = response.body, let html = body.readString(length: body.readableBytes) {
@@ -34,13 +32,13 @@ func routes(_ app: Application) throws {
                 for rangeIndex in 1..<match.numberOfRanges {
                     let data = (html as NSString).substring(with: match.range(at: rangeIndex)).data(using: .utf8)!
                     let urlString = String(data: data, encoding: .utf8)!
+                    req.logger.info("Use icon from coolapk.com")
                     return .init(name: "", url: "", image: urlString).wrapped()
                 }
             }
         }
 
         // Google Play
-        req.logger.info("Fetching app icon from play.google.com")
         response = try await req.client.get("https://play.google.com/store/apps/details?id=\(packageName)&hl=zh&gl=us")
         
         if var body = response.body, let html = body.readString(length: body.readableBytes) {
@@ -50,6 +48,7 @@ func routes(_ app: Application) throws {
             for match in matches {
                 for rangeIndex in 1 ..< match.numberOfRanges {
                     let data = (html as NSString).substring(with: match.range(at: rangeIndex)).data(using: .utf8)!
+                    req.logger.info("Use icon from play.google.com")
                     return try JSONDecoder().decode(AppLogo.self, from: data).wrapped()
                 }
             }    
