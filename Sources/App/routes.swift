@@ -16,10 +16,12 @@ func routes(_ app: Application) throws {
         else { throw Abort(.badRequest) }
 
         // Local database
-        if try await Icon.query(on: req.db).filter(\.$packageName == packageName).count() > 0 {
+        if let buffer = try? await req.fileio.collectFile(at: "data/icons/\(packageName).jpg"), buffer.readableBytes > 0 {
             return .init(name: "", url: "", image: "https://bot.k2t3k.tk/api/appIcon?packageName=\(packageName)")
+        } else {
+            req.logger.info("No local icon file. Fetching online.")
         }
-        
+
         // Coolapk
         req.logger.info("Fetching app icon from coolapk.com")
         var response = try await req.client.get("https://www.coolapk.com/apk/\(packageName)")

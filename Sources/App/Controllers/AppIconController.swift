@@ -16,34 +16,25 @@ struct AppIconController: RouteCollection {
             throw Abort(.badRequest)
         }
 
-        guard let icon = try await Icon.query(on: req.db)
-            .filter(\.$packageName == packageName)
-            .first() else {
+        guard var buffer = try? await req.fileio.collectFile(at: "data/icons/\(packageName).jpg"),
+            let data = buffer.readData(length: buffer.readableBytes) else {
             throw Abort(.notFound)
         }
         
         let headers = HTTPHeaders()
 
-        return .init(status: .ok, headers: headers, body: .init(data: icon.image))
+        return .init(status: .ok, headers: headers, body: .init(data: data))
     }
 
     func newIcon(req: Request) async throws -> RequestResult {
         // POST /api/appIcon?packageName=
-        guard req.headers["Content-Type"].contains("image/jpeg") || req.headers["Content-Type"].contains("image/png"), 
+        guard req.headers["Content-Type"].contains("image/jpeg"), 
             let packageName: String = req.query["packageName"],
-            var buffer = req.body.data, 
-            let data = buffer.readData(length: buffer.readableBytes) else {        
+            let buffer = req.body.data else {        
             throw Abort(.badRequest)
         }
 
-        if let oldIcon = try await Icon.query(on: req.db).filter(\.$packageName == packageName).first() {
-            oldIcon.image = data
-            try await oldIcon.update(on: req.db)
-            return .init(code: 200, isSuccess: true, message: "Updated app icon.")
-        } else {
-            let newIcon = Icon(packageName: packageName, image: data)
-            try await newIcon.create(on: req.db)
-            return .init(code: 200, isSuccess: true, message: "Added new app icon.")
-        }
+        try await req.fileio.writeFile(buffer, at: "data/icons/\(packageName).jpg")
+        return .init(code: 200, isSuccess: true, message: "Added/updated new app icon.")
     }
 }

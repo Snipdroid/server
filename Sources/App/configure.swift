@@ -18,10 +18,9 @@ public func configure(_ app: Application) throws {
 
     app.logger.logLevel = .info
 
-    app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
+    app.databases.use(.sqlite(.file("data/db.sqlite")), as: .sqlite)
 
     app.migrations.add(CreateAppInfo())
-    app.migrations.add(CreateIcon())
 
     // register routes
     try routes(app)
