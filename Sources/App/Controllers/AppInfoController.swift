@@ -12,26 +12,23 @@ struct AppInfoController: RouteCollection {
     }
 
     func patch(req: Request) async throws -> RequestResult {
-        guard let patcher = try? req.content.decode(AppInfo.self) else {
+        guard let patches = try? req.content.decode([AppInfo].self) else {
             throw Abort(.badRequest)
         }
 
-        guard let id = patcher.id else {
-            return .init(code: 400, isSuccess: false, message: "Patch needs and id.")
+        var count = 0
+
+        for patch in patches {
+            guard let id = patch.id else { continue }
+            guard patch.appName != "" else { continue }
+            guard let appInfoToPatch = try await AppInfo.query(on: req.db).filter(\.$id == id).first() else { continue }
+
+            appInfoToPatch.appName = patch.appName
+            try await appInfoToPatch.update(on: req.db)
+            count += 1;
         }
 
-        guard patcher.appName != "" else {
-            return .init(code: 1001, isSuccess: false, message: "App name cannot be empty.")
-        }
-
-        guard let appInfoToPatch = try await AppInfo.query(on: req.db).filter(\.$id == id).first() else {
-            return .init(code: 400, isSuccess: false, message: "App info with requested ID not found.")
-        }
-        
-        appInfoToPatch.appName = patcher.appName
-        try await appInfoToPatch.update(on: req.db)
-
-        return .init(code: 200, isSuccess: true, message: "Update succeeded.")
+        return .init(code: 200, isSuccess: true, message: "Successfully updated \(count) apps' name.")
     }
 
     func delete(req: Request) async throws -> RequestResult {
