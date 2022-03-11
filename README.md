@@ -10,7 +10,7 @@
 
 ### API
 
-[OpenAPI 3.0](https://gist.githubusercontent.com/Butanediol/c297b9921607bf39a3ecff5ebb3a9b5a/raw/)
+[OpenAPI 3.0](https://github.com/Oblatum/App-Tracker-for-Icon-Pack-Server-Side/blob/main/OpenAPI.yaml)
 
 ### 本项目提供什么？
 

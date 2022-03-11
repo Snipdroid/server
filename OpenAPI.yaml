@@ -1,0 +1,340 @@
+openapi: 3.0.1
+info:
+  title: App Tracker Open API
+  description: Note that the base url is for test purpose only, do not use this server
+    in production.
+  version: v2.0.0
+servers:
+- url: https://test.k2t3k.tk/api
+tags: []
+paths:
+  /appInfo:
+    get:
+      tags:
+      - App Info
+      summary: Search app info
+      operationId: e69afbec-4755-4a6f-8a44-decaf8789495
+      parameters:
+      - name: q
+        in: query
+        description: Regular search text. Leave this empty if you use regex search.
+        schema:
+          type: string
+          default: app-tracker
+      - name: regex
+        in: query
+        description: Regex search pattern. Leave this empty if you use regular search.
+        schema:
+          type: string
+      - name: per
+        in: query
+        description: Items per page, default is 10
+        schema:
+          type: string
+          default: "10"
+      - name: page
+        in: query
+        description: Current page, default is 1
+        schema:
+          type: string
+          default: "1"
+      responses:
+        200:
+          description: Response with a list of app info.
+          content:
+            '*/*':
+              schema:
+                type: object
+                properties:
+                  metadata:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      per:
+                        type: integer
+                      total:
+                        type: integer
+                        example: 2147483647
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        appName:
+                          type: string
+                          example: app-tracker
+                        signature:
+                          type: string
+                          example: ""
+                        id:
+                          type: string
+                          description: As long as the response has the same appName,
+                            packageName, activityName and signature, the UUID is exactly
+                            the same. This has no meaning to you but can be handy
+                            when building a hashtable.
+                          example: CB335890-33D6-4069-852C-DC7ECC6E149C
+                        activityName:
+                          type: string
+                          example: ren.imyan.app_tracker.ui.MainActivity
+                        count:
+                          type: integer
+                          example: 9
+                        packageName:
+                          type: string
+                          example: ren.imyan.app_tracker
+    post:
+      tags:
+      - App Info
+      summary: Upload new app info
+      operationId: 435ed44a-e0b3-4329-8e2b-9248761bec37
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - activityName
+              - appName
+              - id
+              - packageName
+              - signature
+              type: object
+              properties:
+                appName:
+                  type: string
+                  example: App-Tracker
+                packageName:
+                  type: string
+                  example: ren.imyan.app_tracker
+                activityName:
+                  type: string
+                  example: ren.imyan.app_tracker.ui.MainActivity
+                id:
+                  type: string
+                  description: This is used for distinguish different request. Make
+                    sure you generate a UUID string that is in correct format.
+                  example: CB335890-33D6-4069-852C-DC7ECC6E149C
+                count:
+                  type: integer
+                  description: This valued always get erased when uploading. Thus
+                    you can ignore this property or toss a random number.
+                  example: 1
+                signature:
+                  type: string
+                  description: This is used for distinguish uploader. Useful when
+                    you want to do statistics on you very icon pack.
+                  example: app-tracker
+        required: true
+      responses:
+        200:
+          description: This returns the same object as the uploaded one, but with
+            a different UUID.
+          content:
+            '*/*':
+              schema:
+                type: object
+                properties:
+                  appName:
+                    type: string
+                  packageName:
+                    type: string
+                  activityName:
+                    type: string
+                  id:
+                    type: string
+                  count:
+                    type: integer
+                  signature:
+                    type: string
+                example: '{"packageName":"ren.imyan.app_tracker","id":"C45F6D06-117F-435E-908A-BC889185F616","signature":"","appName":"App-Tracker","count":1,"activityName":"ren.imyan.app_tracker.ui.MainActivity"}'
+      x-codegen-request-body-name: body
+  /{signature}/appInfo:
+      get:
+        tags:
+        - AppInfo with signature
+        summary: Search app info
+        operationId: 765f2d0e-1013-4ca2-beaa-5f4c66e5fcab
+        parameters:
+        - name: signature
+          in: path
+          description: Identity
+          required: true
+          schema:
+            type: string
+            default: 'app-tracker'
+        - name: q
+          in: query
+          description: Regular search text. Leave this empty if you use regex search.
+          schema:
+            type: string
+            default: app-tracker
+        - name: regex
+          in: query
+          description: Regex search pattern. Leave this empty if you use regular search.
+          schema:
+            type: string
+        - name: per
+          in: query
+          description: Items per page, default is 10
+          schema:
+            type: string
+            default: "10"
+        - name: page
+          in: query
+          description: Current page, default is 1
+          schema:
+            type: string
+            default: "1"
+        responses:
+          200:
+            description: Response with a list of app info.
+            content:
+              '*/*':
+                schema:
+                  type: object
+                  properties:
+                    metadata:
+                      type: object
+                      properties:
+                        page:
+                          type: integer
+                        per:
+                          type: integer
+                        total:
+                          type: integer
+                          example: 2147483647
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          appName:
+                            type: string
+                            example: app-tracker
+                          signature:
+                            type: string
+                            example: ""
+                          id:
+                            type: string
+                            description: As long as the response has the same appName,
+                              packageName, activityName and signature, the UUID is exactly
+                              the same. This has no meaning to you but can be handy
+                              when building a hashtable.
+                            example: CB335890-33D6-4069-852C-DC7ECC6E149C
+                          activityName:
+                            type: string
+                            example: ren.imyan.app_tracker.ui.MainActivity
+                          count:
+                            type: integer
+                            example: 9
+                          packageName:
+                            type: string
+                            example: ren.imyan.app_tracker
+  /icon:
+    get:
+      tags:
+      - Miscellaneous
+      summary: Get app icon
+      description: Get app icon by package name. Icons are fetched from either coolapk.com
+        or play.google.com.
+      operationId: a500d606-1c3c-475f-ad7f-036bec306648
+      parameters:
+      - name: appId
+        in: query
+        description: App's package name
+        required: true
+        schema:
+          type: string
+          default: com.tencent.mobileqq
+      responses:
+        200:
+          description: Responde with a object containing app icon
+          content:
+            '*/*':
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: Only existe when fetched from google play.
+                    example: https://www.coolapk.com/apk/com.tencent.mobileqq
+                  name:
+                    type: string
+                    description: Only existe when fetched from google play.
+                    example: QQ
+                  image:
+                    type: string
+                    description: URL to the app icon image.
+                    example: https://download-proxy.butanediol.workers.dev/?url=http://pp.myapp.com/ma_icon/0/icon_6633_1645738071/256
+  /appIcon:
+    get:
+      tags:
+      - App Icon
+      summary: Get app icon
+      description: Get app icon by package name.
+      operationId: 8e59c51a-14df-45b0-afc4-2eb0eb44bf42
+      parameters:
+      - name: packageName
+        in: query
+        description: App's package name
+        required: true
+        schema:
+          type: string
+          default: com.tencent.mobileqq
+      responses:
+        200:
+          description: Responde with a object containing app icon
+          content:
+            'image/jpeg':
+              schema:
+                type: string
+                format: binary
+        404:
+          description: Not found icon in database
+          content:
+            'application/json':
+              schema:
+                type: object
+                properties:
+                  reason:
+                    type: string
+                    default: "Not Found"
+                  error:
+                    type: boolean
+                    default: true
+    post:
+      tags:
+      - App Icon
+      summary: Upload app icon
+      operationId: 174fa60a-e87e-48c2-bc85-2b6139b521e7
+      parameters:
+      - name: packageName
+        in: query
+        description: App's package name
+        required: true
+        schema:
+          type: string
+          default: com.tencent.mobileqq
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+      responses:
+        200:
+          description: Icon metadata
+          content:
+            'application/json':
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  packageName:
+                    type: string
+                  image:
+                    type: string
+                    format: binary
+components: {}
