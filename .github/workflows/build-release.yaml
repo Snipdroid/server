@@ -1,0 +1,35 @@
+name: Release build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # Install swift lang
+    steps:
+      - name: Install swift-lang
+        run: |
+          sudo apt update
+          sudo apt install -y curl ca-certificates gnupg
+          curl -fsSL https://archive.swiftlang.xyz/swiftlang_repo.gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/swiftlang_repo.gpg.key
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/swiftlang_repo.gpg.key] https://archive.swiftlang.xyz/ubuntu focal main" | sudo tee /etc/apt/sources.list.d/swiftlang.list > /dev/null
+          sudo apt update
+          sudo apt install -y swiftlang
+    
+      - uses: actions/checkout@v2
+      
+      - name: Build
+        run: swift build -c release -Xswiftc -static-executable -Xswiftc -static-stdlib
+        
+      - name: Download a Build Artifact
+        uses: actions/upload-artifact@v3.0.0
+        with:
+          # Artifact name
+          name: release
+          # Destination path
+          path: .build/x86_64-unknown-linux-gnu/release
