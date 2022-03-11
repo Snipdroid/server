@@ -4,7 +4,16 @@
 
 请放心，本软件并不会收集或上传任何个人信息，只有应用的名称、包名和启动项会被提交，本项目完全开源，请放心使用。
 
+### TODO
+
+* [ ] 上传鉴权
+
+### API
+
+[OpenAPI 3.0](https://gist.githubusercontent.com/Butanediol/c297b9921607bf39a3ecff5ebb3a9b5a/raw/)
+
 ### 本项目提供什么？
+
 - 应用名 / 包名 / 启动项名互查功能 -> [去查询](https://app-tracker.k2t3k.tk)
 - 客户端应用信息上传功能 -> [去上传](https://github.com/Oblatum/App-Tracker-for-Icon-Pack-Client-Side-Android-Version/releases)
 - 图标包申请统计功能（需要图标包客户端支持，API 文档施工中，试用请提交 Issue）
@@ -14,7 +23,6 @@
 #### Docker
 
 服务端使用 [Vapor]() 搭建而成，你可以参考 [Vapor 的官方文档](https://vapor.k2t3k.tk/)，其中包含[如何使用 Docker 来启动服务](https://vapor.k2t3k.tk/4.0/deploy/docker/)。
-
 
 #### 自行构建
 
