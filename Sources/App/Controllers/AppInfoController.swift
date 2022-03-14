@@ -57,11 +57,13 @@ struct AppInfoController: RouteCollection {
             let appInfo = try req.content.decode(AppInfo.self)
             appInfo.count = 1
             appInfo.id = UUID()
+            appInfo.signature = appInfo.signature == "app-tracker" ? "" : appInfo.signature
             return appInfo
         }()
         
-        let withSignature = newAppInfo.signature != "" && newAppInfo.signature != "app-tracker"
+        let withSignature = newAppInfo.signature != ""
 
+        // Update appName of all app with the same packageName and activityName
         try await AppInfo.query(on: req.db)
             .filter(\.$packageName == newAppInfo.packageName)
             .filter(\.$activityName == newAppInfo.activityName)
@@ -73,24 +75,25 @@ struct AppInfoController: RouteCollection {
             }
             .end()
 
-        if withSignature {
-            if let old = try await AppInfo.query(on: req.db)
-                .filter(\.$packageName == newAppInfo.packageName)
-                .filter(\.$activityName == newAppInfo.activityName)
-                .filter(\.$signature == newAppInfo.signature)
-                .first() {
-                old.count! += 1
-                try await old.update(on: req.db)
-            } else {
-                try await newAppInfo.create(on: req.db)
-            }
+        if let old = try await AppInfo.query(on: req.db)
+            .filter(\.$packageName == newAppInfo.packageName)
+            .filter(\.$activityName == newAppInfo.activityName)
+            .filter(\.$signature == newAppInfo.signature)
+            .first() {
+            // If already exists, counter ++
+            old.count! += 1
+            try await old.update(on: req.db)
+        } else {
+            // If not, create new
+            try await newAppInfo.create(on: req.db)
         }
 
         if try await AppInfo.query(on: req.db)
             .filter(\.$packageName == newAppInfo.packageName)
             .filter(\.$activityName == newAppInfo.activityName)
             .filter(\.$signature == "")
-            .first() == nil {
+            .first() == nil, withSignature {
+            // If the new has signature, also havent been recorded, erase signature then copy.
             try await newAppInfo.eraseSignature().create(on: req.db)
         }
 
@@ -127,6 +130,7 @@ struct AppInfoController: RouteCollection {
                     }
                 }
             }
+            .sort(\.$count, .descending)
             .sort(\.$appName, .ascending)
             .paginate(for: req)
     }
