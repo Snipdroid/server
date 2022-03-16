@@ -6,4 +6,5 @@ DerivedData/
 .DS_Store
 db.sqlite
 .swiftpm
-data
+data/sqlite.db
+data/icons/*.jpg
