@@ -285,7 +285,7 @@ paths:
         200:
           description: Responde with a object containing app icon
           content:
-            'image/jpeg':
+            'image/png':
               schema:
                 type: string
                 format: binary
@@ -318,7 +318,7 @@ paths:
       requestBody:
         required: true
         content:
-          image/jpeg:
+          image/png:
             schema:
               type: string
               format: binary

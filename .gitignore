@@ -7,4 +7,5 @@ DerivedData/
 db.sqlite
 .swiftpm
 data/sqlite.db
-data/icons/*.jpg
+data/icons/*
+data/icons_jpg/*

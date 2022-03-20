@@ -34,7 +34,7 @@ struct IconController: RouteCollection {
 
     private func getLocalIcon(req: Request, packageName: String) async throws -> AppLogo? {
         // Local database
-        if let buffer = try? await req.fileio.collectFile(at: "data/icons/\(packageName).jpg"), buffer.readableBytes > 0 {
+        if let buffer = try? await req.fileio.collectFile(at: "data/icons/\(packageName).png"), buffer.readableBytes > 0 {
             req.logger.info("Find local icon file.")
             return .init(name: "", url: "", image: "https://bot.k2t3k.tk/api/appIcon?packageName=\(packageName)")
         }
