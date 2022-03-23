@@ -102,18 +102,24 @@ struct AppInfoController: RouteCollection {
 
     func search(req: Request) async throws -> Page<AppInfo> {
 
+        var searchResult: Page<AppInfo>
+
         if let searchText: String = req.query["q"] {
-            return try await normalSearch(searchText, for: req)
+            searchResult = try await normalSearch(searchText, for: req)
+            req.logger.info("QUERY \(searchText) returns \(searchResult.metadata.total) results.")
         } else if let regexPattern: String = req.query["regex"] {
-            return try await regexSearch(regexPattern, for: req)
+            searchResult = try await regexSearch(regexPattern, for: req)
+            req.logger.info("REGEX \(regexPattern) returns \(searchResult.metadata.total) results.")
         } else {
-            return try await AppInfo.query(on: req.db).paginate(for: req)
+            searchResult = try await AppInfo.query(on: req.db).paginate(for: req)
+            req.logger.info("ALL QUERY returns \(searchResult.metadata.total) results.")
         }
+
+        return searchResult
     }
 
     private func normalSearch(_ searchText: String, for req: Request) async throws -> Page<AppInfo> {
         let searchTextMatrix = searchText.split(separator: "|").map { $0.split(separator: " ") }
-        req.logger.info("Search app '\(searchTextMatrix)'")
         return try await AppInfo.query(on: req.db)
             .filter(\.$signature == "")
             .group(.or) { group in
@@ -140,8 +146,6 @@ struct AppInfoController: RouteCollection {
             req.logger.error("Failed to decode page metadata")
             throw Abort(.badRequest)
         }
-
-        req.logger.info("Regex search app \(pattern)") 
         
         var filterResult = [AppInfo]()
         for appInfo in try await AppInfo.query(on: req.db).all() {
