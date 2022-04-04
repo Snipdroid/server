@@ -9,3 +9,4 @@ db.sqlite
 data/sqlite.db
 data/icons/*
 data/icons_jpg/*
+.vscode
