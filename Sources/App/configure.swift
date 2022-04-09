@@ -1,5 +1,5 @@
 import Fluent
-import FluentSQLiteDriver
+import FluentPostgresDriver
 import Vapor
 
 // configures your application
@@ -11,7 +11,11 @@ public func configure(_ app: Application) throws {
     configureHttp(app)
     configureMiddleware(app)
 
-    app.databases.use(.sqlite(.file("data/db.sqlite")), as: .sqlite)
+    guard let postgresUrl = Environment.get("POSTGRES_URL") else {
+        app.logger.error("Environment variable POSTGRES_URL not found in .env file.")
+        exit(1)
+    }
+    try app.databases.use(.postgres(url: postgresUrl), as: .psql)
     app.migrations.add(CreateAppInfo())
 
     // register routes

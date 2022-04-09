@@ -10,3 +10,4 @@ data/sqlite.db
 data/icons/*
 data/icons_jpg/*
 .vscode
+.env

@@ -1,4 +1,5 @@
 import Fluent
+import FluentSQL
 import Vapor
 
 struct AppInfoController: RouteCollection {
@@ -128,7 +129,7 @@ struct AppInfoController: RouteCollection {
                         for word in col {
                             subgroup.group(.or) { subsubgroup in
                                 subsubgroup
-                                    .filter(\.$appName ~~ String(word))
+                                    .filter(\.$appName, .custom("ILIKE"), "%\(word)%")
                                     .filter(\.$packageName ~~ String(word))
                                     .filter(\.$activityName ~~ String(word))
                             }
@@ -136,26 +137,18 @@ struct AppInfoController: RouteCollection {
                     }
                 }
             }
-            .sort(\.$count, .descending)
-            .sort(\.$appName, .ascending)
+            .sort(.sql(raw: "similarity(app_name, '\(searchText)') DESC"))
             .paginate(for: req)
     }
 
     private func regexSearch(_ pattern: String, for req: Request) async throws -> Page<AppInfo> {
-        guard let page = try? req.query.decode(PageRequest.self) else {
-            req.logger.error("Failed to decode page metadata")
-            throw Abort(.badRequest)
-        }
-        
-        var filterResult = [AppInfo]()
-        for appInfo in try await AppInfo.query(on: req.db).all() {
-            if try appInfo.regexSearch(\.appName, with: pattern) ||
-            appInfo.regexSearch(\.packageName, with: pattern) ||
-            appInfo.regexSearch(\.activityName, with: pattern) {
-                filterResult.append(appInfo)
+        return try await AppInfo.query(on: req.db)
+            .group(.or) { or in
+                or.filter(\.$appName, .custom("~"), pattern)
+                or.filter(\.$packageName, .custom("~"), pattern)
+                or.filter(\.$activityName, .custom("~"), pattern)
             }
-        }
-
-        return filterResult.paginate(for: page)
+            .sort(\.$count, .descending)
+            .paginate(for: req)
     }
 }
