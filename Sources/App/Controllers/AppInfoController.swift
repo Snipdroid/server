@@ -138,6 +138,7 @@ struct AppInfoController: RouteCollection {
                 }
             }
             .sort(.sql(raw: "similarity(app_name, '\(searchText)') DESC"))
+            .sort(\.$count, .descending)
             .paginate(for: req)
     }
 
