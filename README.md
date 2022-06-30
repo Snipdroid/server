@@ -22,6 +22,14 @@
 
 #### Docker
 
+##### Docker Compose
+
+1. 安装 Docker 环境。修改 `docker-compose.yaml` 文件中你需要修改的变量（可选）。
+2. `docker compose up -d`
+3. `docker compose run migrate`
+4. 在 postgresql 数据库中运行，`CREATE EXTENSION pg_trgm;`
+5. 大功告成。
+
 服务端使用 [Vapor]() 搭建而成，你可以参考 [Vapor 的官方文档](https://vapor.k2t3k.tk/)，其中包含[如何使用 Docker 来启动服务](https://vapor.k2t3k.tk/4.0/deploy/docker/)。
 
 #### 自行构建
