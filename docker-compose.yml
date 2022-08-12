@@ -37,6 +37,8 @@ services:
     build:
       context: .
     environment:
+      HTTP_PROXY_ADDR: ""
+      HTTP_PROXY_PORT: 1080
       <<: *shared_environment
     command: ["migrate", "--yes"]
     deploy:

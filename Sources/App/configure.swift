@@ -18,6 +18,13 @@ public func configure(_ app: Application) throws {
     try app.databases.use(.postgres(url: postgresUrl), as: .psql)
     app.migrations.add(CreateAppInfo())
 
+    if let httpProxyAddr = Environment.get("HTTP_PROXY_ADDR"), 
+        let httpProxyPort = Environment.get("HTTP_PROXY_PORT"),
+        let httpProxyPortNumber = Int(httpProxyPort) {
+            app.logger.info("Using http proxy http://\(httpProxyAddr):\(httpProxyPortNumber)")
+            app.http.client.configuration.proxy = .server(host: httpProxyAddr, port: httpProxyPortNumber)
+    }
+
     // register routes
     try routes(app)
 }
