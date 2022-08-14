@@ -47,4 +47,5 @@ fileprivate func configureMiddleware(_ app: Application) {
     )
     let cors = CORSMiddleware(configuration: corsConfiguration)
     app.middleware.use(cors, at: .beginning)
+    app.middleware.use(CacheControlMiddleware())
 }
