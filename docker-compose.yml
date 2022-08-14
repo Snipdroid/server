@@ -15,6 +15,9 @@
 version: '3.7'
 
 x-shared_environment: &shared_environment
+  # HTTP_PROXY_ADDR: ""
+  # HTTP_PROXY_PORT: 1080
+  BASE_URL: "http://localhost:8080"
   POSTGRES_URL: "postgres://vapor_username:vapor_password@db:5432/vapor_username"
   LOG_LEVEL: ${LOG_LEVEL:-debug}
   
@@ -37,8 +40,6 @@ services:
     build:
       context: .
     environment:
-      HTTP_PROXY_ADDR: ""
-      HTTP_PROXY_PORT: 1080
       <<: *shared_environment
     command: ["migrate", "--yes"]
     deploy:

@@ -11,6 +11,12 @@ public func configure(_ app: Application) throws {
     configureHttp(app)
     configureMiddleware(app)
 
+    guard let baseUrl = Environment.get("BASE_URL") else {
+        app.logger.error("Environment variable BASE_URL not found in .env file.")
+        exit(1)
+    }
+    app.baseUrl = baseUrl
+
     guard let postgresUrl = Environment.get("POSTGRES_URL") else {
         app.logger.error("Environment variable POSTGRES_URL not found in .env file.")
         exit(1)
