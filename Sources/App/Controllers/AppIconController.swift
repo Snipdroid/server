@@ -15,8 +15,9 @@ struct AppIconController: RouteCollection {
         guard let packageName: String = req.query["packageName"] else {
             throw Abort(.badRequest)
         }
-
-        return req.fileio.streamFile(at: "data/icons/\(packageName).png")
+        // req.fileio.streamFile(at: "data/icons/\(packageName).png")
+        let data = try await req.application.iconProvider.getIcon(from: packageName)
+        return .init(status: .ok, body: .init(data: data))
     }
 
     func newIcon(req: Request) async throws -> RequestResult {
@@ -26,8 +27,8 @@ struct AppIconController: RouteCollection {
             let buffer = req.body.data else {        
             throw Abort(.badRequest)
         }
-
-        try await req.fileio.writeFile(buffer, at: "data/icons/\(packageName).png")
+        let data = Data(buffer: buffer)
+        try await req.application.iconProvider.saveIcon(data, for: packageName)
         return .init(code: 200, isSuccess: true, message: "Added/updated new app icon.")
     }
 }

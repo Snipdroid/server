@@ -11,6 +11,18 @@ public func configure(_ app: Application) throws {
     configureHttp(app)
     configureMiddleware(app)
 
+    if let bucket = Environment.get("S3_BUCKET"),
+        let accessKeyId = Environment.get("S3_ACCESS_KEY_ID"),
+        let secretAccessKey = Environment.get("S3_SECRET_ACCESS_KEY") {
+            app.iconProvider = S3IconProvider.init(
+                bucket: bucket, 
+                accessKeyId: accessKeyId, 
+                secretAccessKey: secretAccessKey,
+                s3Endpoint: Environment.get("S3_ENDPOINT")
+            )
+            app.lifecycle.use(S3LifecycleHandler())
+    }
+
     guard let baseUrl = Environment.get("BASE_URL") else {
         app.logger.error("Environment variable BASE_URL not found in .env file.")
         exit(1)
