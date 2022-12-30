@@ -11,6 +11,7 @@ public func configure(_ app: Application) throws {
     configureHttp(app)
     configureMiddleware(app)
 
+    // S3
     if let bucket = Environment.get("S3_BUCKET"),
         let accessKeyId = Environment.get("S3_ACCESS_KEY_ID"),
         let secretAccessKey = Environment.get("S3_SECRET_ACCESS_KEY") {
@@ -18,6 +19,7 @@ public func configure(_ app: Application) throws {
                 bucket: bucket, 
                 accessKeyId: accessKeyId, 
                 secretAccessKey: secretAccessKey,
+                s3Region: .init(rawValue: Environment.get("S3_REGION")),
                 s3Endpoint: Environment.get("S3_ENDPOINT")
             )
             app.lifecycle.use(S3LifecycleHandler())
