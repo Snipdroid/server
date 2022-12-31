@@ -15,10 +15,13 @@
 version: '3.7'
 
 x-shared_environment: &shared_environment
-  # HTTP_PROXY_ADDR: ""
+  # HTTP_PROXY_ADDR: 127.0.0.1
   # HTTP_PROXY_PORT: 1080
-  BASE_URL: "http://localhost:8080"
-  POSTGRES_URL: "postgres://vapor_username:vapor_password@db:5432/vapor_username"
+  POSTGRES_URL: postgres://vapor_username:vapor_password@db:5432/vapor_username
+  S3_BUCKET: apptracker
+  S3_ACCESS_KEY_ID: 1lJv3MOZKjGsSao6
+  S3_SECRET_ACCESS_KEY: aHeNDfGYDvQcEDFRIH3WZOSkfdYxnecf
+  S3_ENDPOINT: http://example.com
   LOG_LEVEL: ${LOG_LEVEL:-debug}
   
 services:
