@@ -1,12 +1,11 @@
 import Fluent
 import Vapor
 
-struct AppIconController: RouteCollection {
+struct AppImageController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let appIcons = routes.grouped("api", "appIcon")
 
         appIcons.get(use: getIcon)
-        // appIcons.post(use: newIcon)
         appIcons.on(.POST, body: .collect(maxSize: "1mb"), use: newIcon)
     }
 
@@ -15,9 +14,11 @@ struct AppIconController: RouteCollection {
         guard let packageName: String = req.query["packageName"] else {
             throw Abort(.badRequest)
         }
-        // req.fileio.streamFile(at: "data/icons/\(packageName).png")
+
         let data = try await req.application.iconProvider.getIcon(from: packageName)
-        return .init(status: .ok, body: .init(data: data))
+        var headers = HTTPHeaders()
+        headers.add(name: "Content-Type", value: "image/png")
+        return .init(status: .ok, headers: headers, body: .init(data: data))
     }
 
     func newIcon(req: Request) async throws -> RequestResult {
@@ -28,7 +29,7 @@ struct AppIconController: RouteCollection {
             throw Abort(.badRequest)
         }
         let data = Data(buffer: buffer)
-        try await req.application.iconProvider.saveIcon(data, for: packageName)
+        try await req.application.iconProvider.saveIcon(data, for: packageName.lowercased())
         return .init(code: 200, isSuccess: true, message: "Added/updated new app icon.")
     }
 }
