@@ -5,8 +5,8 @@ struct AppInfoDTO: Codable {
     let appName: String
     let packageName: String
     let activityName: String
+    
     let iconPack: String?
-    let count: Int?
 }
 
 final class AppInfo: Model, Content {
