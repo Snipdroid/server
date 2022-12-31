@@ -16,6 +16,17 @@ class S3IconProvider: IconProviderProtocol {
 		self.bucket = bucket
 	}
 
+	func getIconUrl(packageName: String) async throws -> String {
+		guard let url = URL(string: s3.endpoint)?
+			.appendingPathComponent(bucket)
+			.appendingPathComponent(packageName)
+			.appendingPathExtension("png") else {
+				throw Errors.failedToGetResponseBody
+			}
+		let signedUrl = try await s3.signURL(url: url, httpMethod: .GET, expires: .minutes(5))
+		return signedUrl.absoluteString
+	}
+
 	func getIcon(from packageName: String) async throws -> Data {
 		return try await getIcon(withFileName: "\(packageName).png")
 	}
@@ -49,10 +60,12 @@ class S3IconProvider: IconProviderProtocol {
 
 	enum Errors: LocalizedError {
 		case failedToGetResponseBody
+		case failedToGetIconUrl
 
 		var errorDescription: String? {
 			switch self {
 				case .failedToGetResponseBody: return "Failed to get response body."
+				case .failedToGetIconUrl: return "Failed to get icon url."
 			}
 		}
 	}

@@ -30,7 +30,8 @@ struct IconController: RouteCollection {
 
     private func getLocalIcon(req: Request) async throws -> Response {
         let packageName = try getPakcageName(from: req)
-        return req.redirect(to: "/api/appIcon?packageName=\(packageName)")
+        let url = try await req.application.iconProvider.getIconUrl(packageName: packageName)
+        return req.redirect(to: url)
     }
 
     private func getIconFromGooglePlay(req: Request) async throws -> Response {

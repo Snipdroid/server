@@ -8,4 +8,6 @@ protocol IconProviderProtocol {
 
 	func saveIcon(_ iconData: Data, for packageName: String) async throws
 
+	func getIconUrl(packageName: String) async throws -> String 
+
 }

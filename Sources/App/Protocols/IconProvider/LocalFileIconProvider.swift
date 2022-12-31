@@ -9,6 +9,10 @@ class LocalFileIconProvider: IconProviderProtocol {
 		self.application = application
 	}
 
+	func getIconUrl(packageName: String) async throws -> String {
+		"/api/appIcon?packageName=\(packageName)"
+	}
+
 	private func getFile(from packageName: String) async throws -> (NIOFileHandle, FileRegion) {
 		let file = try await application.fileio.openFile(
 			path: "data/icons/\(packageName).png", 
