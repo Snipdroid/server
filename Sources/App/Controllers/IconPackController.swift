@@ -21,10 +21,10 @@ struct IconPackController: RouteCollection {
      */
     func getRequests(req: Request) async throws -> Page<IconRequestDTO> {
         guard let iconPackName: String = req.parameters.get("iconpack") else {
-            throw Abort(.init(statusCode: 400, reasonPhrase: "Bad request. Invalid icon pack name."))
+            throw Abort(.notEnoughArguments("iconpack"))
         }
         guard let iconPack = try await IconPack.query(on: req.db).filter(\.$name == iconPackName).first() else {
-            throw Abort(.init(statusCode: 404, reasonPhrase: "Icon pack \(iconPackName) does not exist."))
+            throw Abort(.existanceError(iconPackName))
         }
 
         let requests = try await iconPack.$requests.query(on: req.db).with(\.$appInfo).all()

@@ -24,7 +24,7 @@ struct IconController: RouteCollection {
     func getIcon(req: Request) async throws -> Response {
         // GET /api/appIcon?packageName=
         guard let packageName: String = req.query["packageName"] else {
-            throw Abort(.badRequest)
+            throw Abort(.notEnoughArguments("packageName"))
         }
 
         let data = try await req.application.iconProvider.getIcon(from: packageName)
@@ -38,7 +38,9 @@ struct IconController: RouteCollection {
         guard req.headers["Content-Type"].contains("image/png"), 
             let packageName: String = req.query["packageName"],
             let buffer = req.body.data else {        
-            throw Abort(.badRequest)
+            throw Abort(
+                .either(.notEnoughArguments("packageName"), .contentError("image buffer"))
+            )
         }
         let data = Data(buffer: buffer)
         try await req.application.iconProvider.saveIcon(data, for: packageName.lowercased())
@@ -51,7 +53,7 @@ struct IconController: RouteCollection {
         guard let packageName =
             (req.query["packageName"] as String?)?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
         else {
-            throw Abort(.custom(code: 400, reasonPhrase: "Bad request. Invalid package name."))
+            throw Abort(.notEnoughArguments("packageName"))
         }
         return packageName
     }

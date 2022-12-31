@@ -14,7 +14,7 @@ struct AppInfoController: RouteCollection {
 
     func patch(req: Request) async throws -> RequestResult {
         guard let patches = try? req.content.decode([AppInfo].self) else {
-            throw Abort(.badRequest)
+            throw Abort(.decodingError([AppInfo].self))
         }
 
         var count = 0
@@ -33,15 +33,10 @@ struct AppInfoController: RouteCollection {
     }
 
     func delete(req: Request) async throws -> RequestResult {
-        let idList: [UUID] = try {
-            if let idList = try? req.content.decode([UUID].self) {
-                return idList
-            } else if let id: UUID = req.query["id"] {
-                return [id]
-            } else {
-                throw Abort(.badRequest)
-            }
-        }()
+        
+        guard let idList = try? req.content.decode([UUID].self) else {
+            throw Abort(.decodingError([UUID].self))
+        }
         
         let filterResult = try await AppInfo.query(on: req.db)
             .filter(\.$id ~~ idList)
