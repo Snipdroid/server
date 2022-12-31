@@ -11,10 +11,38 @@ struct IconController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let icon = routes.grouped("api", "icon")
 
-        icon.get(use: getLocalIcon)
+        icon.get("local", use: getLocalIcon)
         icon.get("play", use: getIconFromGooglePlay)
         icon.get("mi", use: getIconFromMi)
         icon.get("coolapk", use: getIconFromCoolapk)
+
+        icon.get(use: getIcon)
+        icon.on(.POST, body: .collect(maxSize: "1mb"), use: newIcon)
+
+    }
+
+    func getIcon(req: Request) async throws -> Response {
+        // GET /api/appIcon?packageName=
+        guard let packageName: String = req.query["packageName"] else {
+            throw Abort(.badRequest)
+        }
+
+        let data = try await req.application.iconProvider.getIcon(from: packageName)
+        var headers = HTTPHeaders()
+        headers.add(name: "Content-Type", value: "image/png")
+        return .init(status: .ok, headers: headers, body: .init(data: data))
+    }
+
+    func newIcon(req: Request) async throws -> RequestResult {
+        // POST /api/appIcon?packageName=
+        guard req.headers["Content-Type"].contains("image/png"), 
+            let packageName: String = req.query["packageName"],
+            let buffer = req.body.data else {        
+            throw Abort(.badRequest)
+        }
+        let data = Data(buffer: buffer)
+        try await req.application.iconProvider.saveIcon(data, for: packageName.lowercased())
+        return .init(code: 200, isSuccess: true, message: "Added/updated new app icon.")
     }
 
     let placeholder = "https://raw.githubusercontent.com/Oblatum/App-Tracker-for-Icon-Pack-Web/main/public/placeholder.png"

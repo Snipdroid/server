@@ -10,7 +10,7 @@ class LocalFileIconProvider: IconProviderProtocol {
 	}
 
 	func getIconUrl(packageName: String) async throws -> String {
-		"/api/appIcon?packageName=\(packageName)"
+		"/api/icon?packageName=\(packageName)"
 	}
 
 	private func getFile(from packageName: String) async throws -> (NIOFileHandle, FileRegion) {

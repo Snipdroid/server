@@ -7,7 +7,6 @@ func routes(_ app: Application) throws {
     }
 
     try app.register(collection: AppInfoController())
-    try app.register(collection: AppImageController())
     try app.register(collection: SignatureAppInfoController())
     try app.register(collection: IconController())
 }
