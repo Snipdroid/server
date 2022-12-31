@@ -1,6 +1,14 @@
 import Fluent
 import Vapor
 
+struct AppInfoDTO: Codable {
+    let appName: String
+    let packageName: String
+    let activityName: String
+    let iconPack: String?
+    let count: Int?
+}
+
 final class AppInfo: Model, Content {
     static let schema = "app_infos"
     
@@ -16,21 +24,20 @@ final class AppInfo: Model, Content {
     @Field(key: "activity_name")
     var activityName: String
 
-    @Field(key: "signature")
-    var signature: String
-
-    @Field(key: "count")
-    var count: Int?
-
     init() { }
 
-    init(id: UUID? = nil, appName: String, packageName: String, activityName: String, signature: String = "", count: Int = 1) {
+    init(id: UUID? = nil, appName: String, packageName: String, activityName: String) {
         self.id = id
         self.appName = appName
         self.packageName = packageName
         self.activityName = activityName
-        self.signature = signature
-        self.count = count
+    }
+
+    init(_ dto: AppInfoDTO) {
+        self.id = UUID()
+        self.appName = dto.appName
+        self.packageName = dto.packageName
+        self.activityName = dto.activityName
     }
 
     static func getExample() -> AppInfo {
@@ -42,13 +49,15 @@ final class AppInfo: Model, Content {
         )
     }
 
-    func eraseSignature() -> AppInfo {
-        .init(id: UUID(), appName: self.appName, packageName: self.packageName, activityName: self.activityName, signature: "", count: 1)
-    }
-
     func regexSearch(_ key: KeyPath<AppInfo, String>, with pattern: String) throws -> Bool {
         let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
         let stringRange = NSRange(location: 0, length: self[keyPath: key].utf16.count)
         return regex.firstMatch(in: self[keyPath: key], range: stringRange) != nil
+    }
+}
+
+extension AppInfo: Equatable {
+    static func == (lhs: AppInfo, rhs: AppInfo) -> Bool {
+        return lhs.packageName == rhs.packageName && lhs.activityName == rhs.activityName
     }
 }

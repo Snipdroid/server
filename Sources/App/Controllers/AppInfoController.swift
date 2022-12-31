@@ -54,51 +54,45 @@ struct AppInfoController: RouteCollection {
     }
 
     func add(req: Request) async throws -> AppInfo {
-        let newAppInfo = try { () -> AppInfo in
-            let appInfo = try req.content.decode(AppInfo.self)
-            appInfo.count = 1
-            appInfo.id = UUID()
-            appInfo.signature = appInfo.signature == "app-tracker" ? "" : appInfo.signature
-            return appInfo
-        }()
-        
-        let withSignature = newAppInfo.signature != ""
 
-        // Update appName of all app with the same packageName and activityName
-        try await AppInfo.query(on: req.db)
+        let newAppInfoDTO = try req.content.decode(AppInfoDTO.self)
+        let newAppInfo = AppInfo(newAppInfoDTO)
+
+        let oldAppInfo = try await AppInfo.query(on: req.db)
             .filter(\.$packageName == newAppInfo.packageName)
             .filter(\.$activityName == newAppInfo.activityName)
-            .filter(\.$appName == "")
-            .all()
-            .asyncMap {
-                $0.appName = newAppInfo.appName
-                try await $0.save(on: req.db)
+            .first()
+
+        if let oldAppInfo = oldAppInfo {
+            // If already exists, update app names if needed.
+            if oldAppInfo.appName != newAppInfo.appName {
+                oldAppInfo.appName = newAppInfo.appName
+                try await oldAppInfo.save(on: req.db)
             }
-            .end()
-
-        if let old = try await AppInfo.query(on: req.db)
-            .filter(\.$packageName == newAppInfo.packageName)
-            .filter(\.$activityName == newAppInfo.activityName)
-            .filter(\.$signature == newAppInfo.signature)
-            .first() {
-            // If already exists, counter ++
-            old.count! += 1
-            try await old.update(on: req.db)
         } else {
-            // If not, create new
-            try await newAppInfo.create(on: req.db)
+            // If not exists, create one
+            try await newAppInfo.save(on: req.db)
         }
-
-        if try await AppInfo.query(on: req.db)
-            .filter(\.$packageName == newAppInfo.packageName)
-            .filter(\.$activityName == newAppInfo.activityName)
-            .filter(\.$signature == "")
-            .first() == nil, withSignature {
-            // If the new has signature, also havent been recorded, erase signature then copy.
-            try await newAppInfo.eraseSignature().create(on: req.db)
+        
+        // Requested from icon pack
+        if let iconPackName = newAppInfoDTO.iconPack,
+           let iconPack = try await IconPack.query(on: req.db).filter(\.$name, .equal, iconPackName).first()
+        {
+            let appInfoId = oldAppInfo?.id ?? newAppInfo.id!
+            if let oldIconRequest = try await IconRequest.query(on: req.db)
+                .filter(\.$fromIconPack.$id, .equal, iconPack.id!)
+                .filter(\.$appInfo.$id, .equal, appInfoId).first() {
+                // Have requested
+                oldIconRequest.count += 1;
+                try await oldIconRequest.update(on: req.db)
+            } else {
+                let newIconRequest = IconRequest(from: iconPack.id!, for: appInfoId)
+                try await newIconRequest.save(on: req.db)
+                // Haven't requested
+            }
         }
-
-        return newAppInfo
+        
+        return oldAppInfo ?? newAppInfo
     }
 
     func search(req: Request) async throws -> Page<AppInfo> {
@@ -122,7 +116,6 @@ struct AppInfoController: RouteCollection {
     private func normalSearch(_ searchText: String, for req: Request) async throws -> Page<AppInfo> {
         let searchTextMatrix = searchText.split(separator: "|").map { $0.split(separator: " ") }
         return try await AppInfo.query(on: req.db)
-            .filter(\.$signature == "")
             .group(.or) { group in
                 for col in searchTextMatrix {
                     group.group(.and) { subgroup in
@@ -138,7 +131,6 @@ struct AppInfoController: RouteCollection {
                 }
             }
             .sort(.sql(raw: "similarity(app_name, '\(searchText)') DESC"))
-            .sort(\.$count, .descending)
             .paginate(for: req)
     }
 
@@ -149,7 +141,6 @@ struct AppInfoController: RouteCollection {
                 or.filter(\.$packageName, .custom("~"), pattern)
                 or.filter(\.$activityName, .custom("~"), pattern)
             }
-            .sort(\.$count, .descending)
             .paginate(for: req)
     }
 }

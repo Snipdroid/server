@@ -35,6 +35,9 @@ public func configure(_ app: Application) throws {
     }
     try app.databases.use(.postgres(url: postgresUrl), as: .psql)
     app.migrations.add(CreateAppInfo())
+    app.migrations.add(RemoveSignature())
+    app.migrations.add(CreateIconPack())
+    app.migrations.add(CreateIconRequest())
 
     if let httpProxyAddr = Environment.get("HTTP_PROXY_ADDR"),
        let httpProxyPort = Environment.get("HTTP_PROXY_PORT"),
