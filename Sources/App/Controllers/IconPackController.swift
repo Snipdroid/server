@@ -28,16 +28,9 @@ struct IconPackController: RouteCollection {
         }
 
         let requests = try await iconPack.$requests.query(on: req.db).with(\.$appInfo).all()
-        return try requests.paginate(for: req).map {
-            IconRequestDTO(
-                appInfoId: $0.appInfo.id,
-                iconRequestId: $0.id,
-                appName: $0.appInfo.appName,
-                packageName: $0.appInfo.packageName,
-                activityName: $0.appInfo.activityName,
-                count: $0.count
-            )
-        }
+        return try requests.map {
+            IconRequestDTO(iconRequestId: $0.id, count: $0.count, appInfo: AppInfoDTO($0.appInfo))
+        }.paginate(for: req)
     }
     
     

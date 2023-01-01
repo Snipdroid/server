@@ -38,6 +38,8 @@ public func configure(_ app: Application) throws {
     app.migrations.add(RemoveSignature())
     app.migrations.add(CreateIconPack())
     app.migrations.add(CreateIconRequest())
+    app.migrations.add(CreateTag())
+    app.migrations.add(CreateAppInfoTagPivot())
 
     if let httpProxyAddr = Environment.get("HTTP_PROXY_ADDR"),
        let httpProxyPort = Environment.get("HTTP_PROXY_PORT"),

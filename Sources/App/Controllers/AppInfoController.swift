@@ -90,6 +90,12 @@ struct AppInfoController: RouteCollection {
         return oldAppInfo ?? newAppInfo
     }
 
+    /*
+     GET /api/appInfo
+     Params:
+        - q
+        - regex
+     */
     func search(req: Request) async throws -> Page<AppInfo> {
 
         var searchResult: Page<AppInfo>
@@ -101,7 +107,7 @@ struct AppInfoController: RouteCollection {
             searchResult = try await regexSearch(regexPattern, for: req)
             req.logger.info("REGEX \(regexPattern) returns \(searchResult.metadata.total) results.")
         } else {
-            searchResult = try await AppInfo.query(on: req.db).paginate(for: req)
+            searchResult = try await AppInfo.query(on: req.db).with(\.$tags).paginate(for: req)
             req.logger.info("ALL QUERY returns \(searchResult.metadata.total) results.")
         }
 
@@ -126,6 +132,7 @@ struct AppInfoController: RouteCollection {
                 }
             }
             .sort(.sql(raw: "similarity(app_name, '\(searchText)') DESC"))
+            .with(\.$tags)
             .paginate(for: req)
     }
 
@@ -136,6 +143,7 @@ struct AppInfoController: RouteCollection {
                 or.filter(\.$packageName, .custom("~"), pattern)
                 or.filter(\.$activityName, .custom("~"), pattern)
             }
+            .with(\.$tags)
             .paginate(for: req)
     }
 }

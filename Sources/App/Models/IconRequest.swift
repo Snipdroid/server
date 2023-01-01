@@ -9,12 +9,9 @@ import Fluent
 import Vapor
 
 struct IconRequestDTO: Codable {
-    let appInfoId: UUID?
     let iconRequestId: UUID?
-    let appName: String
-    let packageName: String
-    let activityName: String
     let count: Int
+    let appInfo: AppInfoDTO
 }
 
 final class IconRequest: Model, Content {

@@ -7,6 +7,20 @@ struct AppInfoDTO: Codable {
     let activityName: String
     
     let iconPack: String?
+    
+    init(appName: String, packageName: String, activityName: String, iconPack: String?) {
+        self.appName = appName
+        self.packageName = packageName
+        self.activityName = activityName
+        self.iconPack = iconPack
+    }
+    
+    init(_ appInfo: AppInfo) {
+        self.appName = appInfo.appName
+        self.packageName = appInfo.packageName
+        self.activityName = appInfo.activityName
+        self.iconPack = nil
+    }
 }
 
 final class AppInfo: Model, Content {
@@ -23,6 +37,9 @@ final class AppInfo: Model, Content {
 
     @Field(key: "activity_name")
     var activityName: String
+    
+    @Siblings(through: AppInfoTagPivot.self, from: \.$appInfo, to: \.$tag)
+    var tags: [Tag]
 
     init() { }
 
