@@ -24,8 +24,8 @@ extension HTTPResponseStatus {
         .init(statusCode: 523, reasonPhrase: "Failed to get content of \(thing).")
     }
     
-    static func existanceError(_ thing: String) -> Self {
-        .init(statusCode: 524, reasonPhrase: "No existance of \(thing).")
+    static func existenceError(_ thing: String) -> Self {
+        .init(statusCode: 524, reasonPhrase: "No existence of \(thing).")
     }
     
     static func databaseError(_ description: String) -> Self {

@@ -23,7 +23,7 @@ struct TagController: RouteCollection {
         }
         
         guard let tag = try await Tag.query(on: req.db).filter(\.$name, .equal, tagName).with(\.$appInfos).first() else {
-            throw(Abort(.existanceError("tag \(tagName)")))
+            throw(Abort(.existenceError("tag \(tagName)")))
         }
         
         return tag
@@ -41,11 +41,11 @@ struct TagController: RouteCollection {
         }
         
         guard let appInfo = try await AppInfo.query(on: req.db).filter(\.$id, .equal, addTagRequest.appInfoId).first() else {
-            throw Abort(.existanceError("appInfo, id: \(addTagRequest.appInfoId)"))
+            throw Abort(.existenceError("appInfo, id: \(addTagRequest.appInfoId)"))
         }
         
         guard let tag = try await Tag.query(on: req.db).filter(\.$id, .equal, addTagRequest.tagId).first() else {
-            throw Abort(.existanceError("tag, id: \(addTagRequest.tagId)"))
+            throw Abort(.existenceError("tag, id: \(addTagRequest.tagId)"))
         }
         
         let newAppInfoTag = try AppInfoTagPivot(appInfo: appInfo, tag: tag)

@@ -24,7 +24,7 @@ struct IconPackController: RouteCollection {
             throw Abort(.notEnoughArguments("iconpack"))
         }
         guard let iconPack = try await IconPack.query(on: req.db).filter(\.$name == iconPackName).first() else {
-            throw Abort(.existanceError(iconPackName))
+            throw Abort(.existenceError(iconPackName))
         }
 
         let requests = try await iconPack.$requests.query(on: req.db).with(\.$appInfo).all()
