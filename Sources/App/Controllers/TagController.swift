@@ -31,7 +31,11 @@ struct TagController: RouteCollection {
 
     func addTag(req: Request) async throws -> Tag {
         let newTag = try req.content.decode(Tag.self)
-        try await newTag.save(on: req.db)
+        do {
+            try await newTag.save(on: req.db)
+        } catch {
+            throw Abort(.databaseError(error.localizedDescription))
+        }
         return newTag
     }
     

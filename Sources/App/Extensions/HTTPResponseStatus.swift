@@ -9,22 +9,26 @@ import Vapor
 
 extension HTTPResponseStatus {
     static func decodingError<T>(_ type: T.Type) -> Self {
-        .init(statusCode: 1000, reasonPhrase: "Failed to decode \(String(describing: type)).")
+        .init(statusCode: 520, reasonPhrase: "Failed to decode \(String(describing: type)).")
     }
     
     static func notEnoughArguments(_ argument: String) -> Self {
-        .init(statusCode: 1001, reasonPhrase: "Missing argument \(argument).")
+        .init(statusCode: 521, reasonPhrase: "Missing argument \(argument).")
     }
     
     static func either(_ a: Self, _ b: Self) -> Self {
-        .init(statusCode: 1002, reasonPhrase: "\(a.reasonPhrase) or \(b.reasonPhrase)")
+        .init(statusCode: 522, reasonPhrase: "\(a.reasonPhrase) or \(b.reasonPhrase)")
     }
     
     static func contentError(_ thing: String) -> Self {
-        .init(statusCode: 1003, reasonPhrase: "Failed to get content of \(thing).")
+        .init(statusCode: 523, reasonPhrase: "Failed to get content of \(thing).")
     }
     
     static func existanceError(_ thing: String) -> Self {
-        .init(statusCode: 1004, reasonPhrase: "No existance of \(thing).")
+        .init(statusCode: 524, reasonPhrase: "No existance of \(thing).")
+    }
+    
+    static func databaseError(_ description: String) -> Self {
+        .init(statusCode: 525, reasonPhrase: description)
     }
 }
