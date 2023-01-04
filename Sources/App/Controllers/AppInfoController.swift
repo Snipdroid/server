@@ -43,19 +43,38 @@ struct AppInfoController: RouteCollection {
             .all()
             
         let count = filterResult.count
+        // Delete all requests related to these apps
+        let deletedRequestCount = try await filterResult
+            .compactMap { appInfo in appInfo.id }
+            .asyncMap { uuid in
+                try await IconRequest.query(on: req.db).filter(\.$appInfo.$id, .equal, uuid).all()
+            }
+            .flatMap { $0 }
+            .asyncMap { iconRequest in
+                try await iconRequest.delete(on: req.db)
+            }
+            .map { _ in 1 } // mapping deletions to 1 so that it's easier to accumulate
+            .reduce(0, +)
+        
         try await filterResult.delete(on: req.db)
         
-        return RequestResult(code: 200, isSuccess: true, message: "Deleted \(count) rows.")
+        return RequestResult(
+            code: 200,
+            isSuccess: true,
+            message: "Deleted \(count) app(s), \(deletedRequestCount) request(s)."
+        )
     }
 
     func add(req: Request) async throws -> AppInfo {
 
         let newAppInfoDTO = try req.content.decode(AppInfoDTO.self)
         let newAppInfo = AppInfo(newAppInfoDTO)
+        try await newAppInfo.$tags.load(on: req.db)
 
         let oldAppInfo = try await AppInfo.query(on: req.db)
             .filter(\.$packageName == newAppInfo.packageName)
             .filter(\.$activityName == newAppInfo.activityName)
+            .with(\.$tags)
             .first()
 
         if let oldAppInfo = oldAppInfo {
@@ -71,17 +90,19 @@ struct AppInfoController: RouteCollection {
         
         // Requested from icon pack
         if let iconPackName = newAppInfoDTO.iconPack,
-           let iconPack = try await IconPack.query(on: req.db).filter(\.$name, .equal, iconPackName).first()
+           let iconPack = try await IconPack.query(on: req.db).filter(\.$name, .equal, iconPackName).first(),
+           let iconPackId = iconPack.id
         {
+            // This iconpack already has this app requested, counter ++
             let appInfoId = oldAppInfo?.id ?? newAppInfo.id!
             if let oldIconRequest = try await IconRequest.query(on: req.db)
-                .filter(\.$fromIconPack.$id, .equal, iconPack.id!)
+                .filter(\.$fromIconPack.$id, .equal, iconPackId)
                 .filter(\.$appInfo.$id, .equal, appInfoId).first() {
                 // Have requested
                 oldIconRequest.count += 1;
                 try await oldIconRequest.update(on: req.db)
             } else {
-                let newIconRequest = IconRequest(from: iconPack.id!, for: appInfoId)
+                let newIconRequest = IconRequest(from: iconPackId, for: appInfoId)
                 try await newIconRequest.save(on: req.db)
                 // Haven't requested
             }
