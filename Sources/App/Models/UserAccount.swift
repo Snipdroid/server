@@ -86,10 +86,14 @@ extension UserAccount: ModelAuthenticatable {
 extension UserAccount {
     func generateToken(validFor period: TimeInterval = 86400) throws -> UserToken {
         try .init(
-            value: [UInt8].random(count: 16).base64,
+            value: generateTokenValue(),
             userID: self.requireID(),
             expireAt: Date() + period
         )
+    }
+    
+    func generateTokenValue() -> String {
+        [UInt8].random(count: 16).base64
     }
 }
 

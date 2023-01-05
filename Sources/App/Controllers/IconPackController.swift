@@ -15,6 +15,12 @@ struct IconPackController: RouteCollection {
         
         iconPack.get("appInfo", use: getRequests)
         iconPack.delete("appInfo", use: deleteRequests)
+        
+        routes.grouped(
+            UserAccount.sessionAuthenticator(),
+            UserToken.authenticator(),
+            UserAccount.authenticator()
+        ).post("api", "iconpack", "new", use: newIconPack)
     }
     /*
      GET /api/:iconpack/appInfo
@@ -51,5 +57,18 @@ struct IconPackController: RouteCollection {
         }
         
         return .init(code: 200, isSuccess: true, message: "Successfully deleted \(deleteCount) requests.")
+    }
+    
+    /*
+     POST /api/iconpack/new
+     */
+    func newIconPack(req: Request) async throws -> IconPack {        
+        let create = try req.content.decode(IconPack.Create.self)
+
+        let user = req.auth.get(UserAccount.self)
+        
+        let iconPack = IconPack(name: create.name, designer: user?.id, accessToken: user?.generateTokenValue())
+        try await iconPack.save(on: req.db)
+        return iconPack
     }
 }

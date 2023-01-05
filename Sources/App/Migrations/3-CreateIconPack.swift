@@ -5,6 +5,7 @@ struct CreateIconPack: AsyncMigration {
         try await database.schema("icon_packs")
             .id()
             .field("name", .string, .required)
+            .unique(on: "name")
             .create()
     }
 
