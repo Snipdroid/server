@@ -53,7 +53,6 @@ final class UserAccount: Model, Content {
         self.createdAt = createdAt
         self.lastChangedAt = lastChangedAt
         self.deletedAt = deletedAt
-        self.iconPacks = []
     }
 }
 
