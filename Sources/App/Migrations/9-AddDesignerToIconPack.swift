@@ -12,6 +12,7 @@ struct AddDesignerToIconPack: AsyncMigration {
         try await database.schema("icon_packs")
             .field("designer", .uuid, .references("user_accounts", "id"))
             .field("access_token", .string)
+            .unique(on: "access_token")
             .update()
     }
     
