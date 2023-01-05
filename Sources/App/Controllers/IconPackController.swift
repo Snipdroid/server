@@ -35,7 +35,7 @@ struct IconPackController: RouteCollection {
 
         let requests = try await iconPack.$requests.query(on: req.db).with(\.$appInfo).all()
         return try requests.map {
-            IconRequestDTO(iconRequestId: $0.id, count: $0.count, appInfo: AppInfoDTO($0.appInfo))
+            IconRequestDTO(iconRequestId: $0.id, count: $0.count, appInfo: AppInfo.Create($0.appInfo))
         }.paginate(for: req)
     }
     
@@ -62,7 +62,7 @@ struct IconPackController: RouteCollection {
     /*
      POST /api/iconpack/new
      */
-    func newIconPack(req: Request) async throws -> IconPack {        
+    func newIconPack(req: Request) async throws -> IconPack {
         let create = try req.content.decode(IconPack.Create.self)
 
         let user = req.auth.get(UserAccount.self)

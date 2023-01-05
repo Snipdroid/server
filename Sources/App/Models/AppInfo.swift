@@ -1,28 +1,6 @@
 import Fluent
 import Vapor
 
-struct AppInfoDTO: Codable {
-    let appName: String
-    let packageName: String
-    let activityName: String
-    
-    let iconPack: String?
-    
-    init(appName: String, packageName: String, activityName: String, iconPack: String?) {
-        self.appName = appName
-        self.packageName = packageName
-        self.activityName = activityName
-        self.iconPack = iconPack
-    }
-    
-    init(_ appInfo: AppInfo) {
-        self.appName = appInfo.appName
-        self.packageName = appInfo.packageName
-        self.activityName = appInfo.activityName
-        self.iconPack = nil
-    }
-}
-
 final class AppInfo: Model, Content {
     static let schema = "app_infos"
     
@@ -50,11 +28,11 @@ final class AppInfo: Model, Content {
         self.activityName = activityName
     }
 
-    init(_ dto: AppInfoDTO) {
+    init(_ create: AppInfo.Create) {
         self.id = UUID()
-        self.appName = dto.appName
-        self.packageName = dto.packageName
-        self.activityName = dto.activityName
+        self.appName = create.appName
+        self.packageName = create.packageName
+        self.activityName = create.activityName
     }
 
     static func getExample() -> AppInfo {
@@ -76,5 +54,25 @@ final class AppInfo: Model, Content {
 extension AppInfo: Equatable {
     static func == (lhs: AppInfo, rhs: AppInfo) -> Bool {
         return lhs.packageName == rhs.packageName && lhs.activityName == rhs.activityName
+    }
+}
+
+extension AppInfo {
+    struct Create: Content {
+        let appName: String
+        let packageName: String
+        let activityName: String
+        
+        init(appName: String, packageName: String, activityName: String) {
+            self.appName = appName
+            self.packageName = packageName
+            self.activityName = activityName
+        }
+        
+        init(_ appInfo: AppInfo) {
+            self.appName = appInfo.appName
+            self.packageName = appInfo.packageName
+            self.activityName = appInfo.activityName
+        }
     }
 }

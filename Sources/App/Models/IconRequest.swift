@@ -11,7 +11,7 @@ import Vapor
 struct IconRequestDTO: Codable {
     let iconRequestId: UUID?
     let count: Int
-    let appInfo: AppInfoDTO
+    let appInfo: AppInfo.Create
 }
 
 final class IconRequest: Model, Content {
