@@ -20,7 +20,7 @@ struct UserAccountController: RouteCollection {
             )
         
         userProtected.post("login", use: userLogin)
-        userProtected.get("me", use: getMe)
+        userProtected.get("iconpack", use: getUserIconPacks)
     }
     
     func createUser(_ req: Request) async throws -> UserAccount {
@@ -47,9 +47,9 @@ struct UserAccountController: RouteCollection {
         return token
     }
     
-    func getMe(_ req: Request) async throws -> UserAccount {
+    func getUserIconPacks(_ req: Request) async throws -> [IconPack] {
         let user = try req.auth.require(UserAccount.self)
         try await user.$iconPacks.load(on: req.db)
-        return user
+        return user.iconPacks
     }
 }
