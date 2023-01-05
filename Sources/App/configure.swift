@@ -40,6 +40,9 @@ public func configure(_ app: Application) throws {
     app.migrations.add(CreateIconRequest())
     app.migrations.add(CreateTag())
     app.migrations.add(CreateAppInfoTagPivot())
+    app.migrations.add(CreateUserAccount())
+    app.migrations.add(CreateUserToken())
+    app.migrations.add(AddDesignerToIconPack())
 
     if let httpProxyAddr = Environment.get("HTTP_PROXY_ADDR"),
        let httpProxyPort = Environment.get("HTTP_PROXY_PORT"),
@@ -67,4 +70,5 @@ private func configureMiddleware(_ app: Application) {
     app.middleware.use(cors, at: .beginning)
     app.middleware.use(CacheControlMiddleware())
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    app.middleware.use(app.sessions.middleware)
 }
