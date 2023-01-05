@@ -11,10 +11,10 @@ import Vapor
 
 struct IconPackController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
-        let iconPack = routes.grouped("api", ":iconpack")
+        let iconPack = routes.grouped("api", "iconpack")
         
-        iconPack.get("appInfo", use: getRequests)
-        iconPack.delete("appInfo", use: deleteRequests)
+        iconPack.get("appinfo", use: getRequests)
+        iconPack.delete("appinfo", use: deleteRequests)
         
         routes.grouped(
             UserAccount.sessionAuthenticator(),
@@ -23,14 +23,23 @@ struct IconPackController: RouteCollection {
         ).post("api", "iconpack", "new", use: newIconPack)
     }
     /*
-     GET /api/:iconpack/appInfo
+     GET /api/iconpack/appinfo?iconpackid=
      */
     func getRequests(req: Request) async throws -> Page<IconRequestDTO> {
-        guard let iconPackName: String = req.parameters.get("iconpack") else {
-            throw Abort(.notEnoughArguments("iconpack"))
+        guard let iconPackId: String = req.query["iconpackid"],
+              let iconPackUuid = UUID(uuidString: iconPackId) else {
+            throw Abort(
+                .either(
+                    .notEnoughArguments("iconpackid"),
+                    .decodingError(UUID.self)
+                )
+            )
         }
-        guard let iconPack = try await IconPack.query(on: req.db).filter(\.$name == iconPackName).first() else {
-            throw Abort(.existenceError(iconPackName))
+        guard let iconPack = try await IconPack.query(on: req.db)
+            .filter(\.$id == iconPackUuid)
+            .first() else
+        {
+            throw Abort(.existenceError(iconPackId))
         }
 
         let requests = try await iconPack.$requests.query(on: req.db).with(\.$appInfo).all()
@@ -41,20 +50,25 @@ struct IconPackController: RouteCollection {
     
     
     /*
-     DELETE /api/:iconpack/appInfo
+     DELETE /api/iconpack/appInfo
      Body: [IconRequest.id]
      */
     func deleteRequests(req: Request) async throws -> RequestResult {
-        let requestsToDelete = try req.content.decode([UUID].self)
+        let uuidList = try req.content.decode([UUID].self)
+        let token = req.headers.bearerAuthorization?.token
         
-        var deleteCount = 0
+        let deletionRequests = try await IconRequest.query(on: req.db)
+            .filter(\.$id ~~ uuidList)
+            .with(\.$fromIconPack)
+            .all()
+            
         
-        try await requestsToDelete.asyncForEach { requestId in
-            if let request = try await IconRequest.query(on: req.db).filter(\.$id, .equal, requestId).first() {
-                try await request.delete(on: req.db)
-                deleteCount += 1
-            }
+        guard deletionRequests.filter({ $0.fromIconPack.accessToken == token }).count == deletionRequests.count else {
+            throw Abort(.unauthorized, reason: "Token not eligible to delete all given requests.")
         }
+        
+        let deleteCount = deletionRequests.count
+        try await deletionRequests.delete(on: req.db)
         
         return .init(code: 200, isSuccess: true, message: "Successfully deleted \(deleteCount) requests.")
     }
