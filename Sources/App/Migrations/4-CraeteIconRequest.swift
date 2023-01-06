@@ -7,7 +7,7 @@ struct CreateIconRequest: AsyncMigration {
             .field("count", .int, .required)
             .field("icon_pack", .uuid, .required, .references("icon_packs", "id"))
             .field("app_info", .uuid, .required, .references("app_infos", "id"))
-            .unique(on: "app_info")
+            .unique(on: "icon_pack", "app_info")
             .create()
     }
 
