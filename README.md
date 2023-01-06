@@ -7,9 +7,15 @@
 
 请放心，本软件并不会收集或上传任何个人信息，只有应用的名称、包名和启动项会被提交，本项目完全开源，请放心使用。
 
+### 项目组成
+
+- AppTracker Server 本体
+- PostgreSQL 数据库
+- S3 存储服务（可选）
+
 ### TODO
 
-* [ ] 上传鉴权
+* [x] 上传鉴权
 
 ### API
 
@@ -28,16 +34,21 @@
 ##### Docker Compose
 
 1. 安装 Docker 环境。修改 `docker-compose.yaml` 文件中你需要修改的变量（可选）。
-2. `docker compose up -d`
-3. `docker compose run migrate`
+2. 运行 `docker compose up -d` 启动本体和数据库
+3. 运行 `docker compose up migrate` 进行数据库迁移
 4. 在 postgresql 数据库中运行，`CREATE EXTENSION pg_trgm;`
+> ```bash
+> $ docker exec -it <container> /bin/bash
+> # psql -U <database_username>
+> database_username=# CREATE EXTENSION pg_trgm;
+> ```
 5. 大功告成。
 
-服务端使用 [Vapor]() 搭建而成，你可以参考 [Vapor 的官方文档](https://vapor.k2t3k.tk/)，其中包含[如何使用 Docker 来启动服务](https://vapor.k2t3k.tk/4.0/deploy/docker/)。
+服务端使用 [Vapor]() 搭建而成，你可以参考 [Vapor 的官方文档](https://docs.vapor.codes)，其中包含[如何使用 Docker 来启动服务](https://docs.vapor.codes/4.0/deploy/docker/)。
 
 #### 自行构建
 
-你可以参考 [Vapor 部署到 DigitalOcean](https://vapor.k2t3k.tk/4.0/deploy/digital-ocean/#swift) 中的内容，从安装 Swift 开始。
+你可以参考 [Vapor 部署到 DigitalOcean](https://docs.vapor.codes/4.0/deploy/digital-ocean/#swift) 中的内容，从安装 Swift 开始。
 
 如果你使用 Debian/Ubuntu，你还可以使用 [Swift Community Apt Repository](https://www.swiftlang.xyz)，通过 `apt` 包管理器进行安装。
 
