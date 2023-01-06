@@ -18,6 +18,9 @@ final class AppInfo: Model, Content {
     
     @Siblings(through: AppInfoTagPivot.self, from: \.$appInfo, to: \.$tag)
     var tags: [Tag]
+    
+    @Children(for: \.$appInfo)
+    var requests: [IconRequest]
 
     init() { }
 
@@ -48,6 +51,10 @@ final class AppInfo: Model, Content {
         let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
         let stringRange = NSRange(location: 0, length: self[keyPath: key].utf16.count)
         return regex.firstMatch(in: self[keyPath: key], range: stringRange) != nil
+    }
+    
+    var count: Int {
+        self.requests.reduce(into: 0) { $0 += $1.count }
     }
 }
 

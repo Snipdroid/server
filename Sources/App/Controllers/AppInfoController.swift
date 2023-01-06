@@ -20,20 +20,20 @@ struct AppInfoController: RouteCollection {
      */
     func search(req: Request) async throws -> Page<AppInfo> {
 
-        var searchResult: Page<AppInfo>
+        var buildQuery: QueryBuilder<AppInfo>
 
         if let searchText: String = req.query["q"] {
-            searchResult = try await normalSearch(searchText, for: req)
-            req.logger.info("QUERY \(searchText) returns \(searchResult.metadata.total) results.")
+            buildQuery = normalSearch(searchText, for: req)
         } else if let regexPattern: String = req.query["regex"] {
-            searchResult = try await regexSearch(regexPattern, for: req)
-            req.logger.info("REGEX \(regexPattern) returns \(searchResult.metadata.total) results.")
+            buildQuery = regexSearch(regexPattern, for: req)
         } else {
-            searchResult = try await AppInfo.query(on: req.db).with(\.$tags).paginate(for: req)
-            req.logger.info("ALL QUERY returns \(searchResult.metadata.total) results.")
+            buildQuery = AppInfo.query(on: req.db)
+                .with(\.$tags)
+                .with(\.$requests)
         }
 
-        return searchResult
+        return try await buildQuery
+            .paginate(for: req)
     }
 
     func add(req: Request) async throws -> AppInfo {
@@ -110,9 +110,9 @@ struct AppInfoController: RouteCollection {
         return .init(code: 200, isSuccess: true, message: "Successfully updated \(count) apps' name.")
     }
 
-    private func normalSearch(_ searchText: String, for req: Request) async throws -> Page<AppInfo> {
+    private func normalSearch(_ searchText: String, for req: Request) -> QueryBuilder<AppInfo> {
         let searchTextMatrix = searchText.split(separator: "|").map { $0.split(separator: " ") }
-        return try await AppInfo.query(on: req.db)
+        return AppInfo.query(on: req.db)
             .group(.or) { group in
                 for col in searchTextMatrix {
                     group.group(.and) { subgroup in
@@ -129,17 +129,17 @@ struct AppInfoController: RouteCollection {
             }
             .sort(.sql(raw: "similarity(app_name, '\(searchText)') DESC"))
             .with(\.$tags)
-            .paginate(for: req)
+            .with(\.$requests)
     }
 
-    private func regexSearch(_ pattern: String, for req: Request) async throws -> Page<AppInfo> {
-        return try await AppInfo.query(on: req.db)
+    private func regexSearch(_ pattern: String, for req: Request) -> QueryBuilder<AppInfo> {
+        return AppInfo.query(on: req.db)
             .group(.or) { or in
                 or.filter(\.$appName, .custom("~"), pattern)
                 or.filter(\.$packageName, .custom("~"), pattern)
                 or.filter(\.$activityName, .custom("~"), pattern)
             }
             .with(\.$tags)
-            .paginate(for: req)
+            .with(\.$requests)
     }
 }
