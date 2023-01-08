@@ -75,7 +75,6 @@ struct IconController: RouteCollection {
             for match in matches {
                 for rangeIndex in 1 ..< match.numberOfRanges {
                     let data = (html as NSString).substring(with: match.range(at: rangeIndex)).data(using: .utf8)!
-                    req.logger.info("Use icon from play.google.com")
                     let urlString = String(data: data, encoding: .utf8)!
                     return req.redirect(to: urlString)
                 }
@@ -95,7 +94,6 @@ struct IconController: RouteCollection {
                 for rangeIndex in 1 ..< match.numberOfRanges {
                     let data = (html as NSString).substring(with: match.range(at: rangeIndex)).data(using: .utf8)!
                     let urlString = String(data: data, encoding: .utf8)!
-                    req.logger.info("Use icon from coolapk.com")
                     return req.redirect(to: urlString)
                 }
             }
@@ -114,7 +112,6 @@ struct IconController: RouteCollection {
                 for rangeIndex in 1 ..< match.numberOfRanges {
                     let data = (html as NSString).substring(with: match.range(at: rangeIndex)).data(using: .utf8)!
                     let urlString = String(data: data, encoding: .utf8)!
-                    req.logger.info("Use icon from app.mi.com")
                     return req.redirect(to: urlString)
                 }
             }
