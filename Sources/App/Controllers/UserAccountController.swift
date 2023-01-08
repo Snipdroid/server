@@ -23,7 +23,7 @@ struct UserAccountController: RouteCollection {
         userProtected.get("iconpack", use: getUserIconPacks)
     }
     
-    func createUser(_ req: Request) async throws -> UserAccount {
+    func createUser(_ req: Request) async throws -> UserToken {
         try UserAccount.Create.validate(content: req)
         let create = try req.content.decode(UserAccount.Create.self)
         guard create.password == create.confirmPassword else {
@@ -37,7 +37,10 @@ struct UserAccountController: RouteCollection {
         )
         
         try await user.save(on: req.db)
-        return user
+        let token = try user.generateToken()
+        try await token.save(on: req.db)
+        return token
+        
     }
     
     func userLogin(_ req: Request) async throws -> UserToken {
