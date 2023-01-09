@@ -14,6 +14,7 @@ struct TagController: RouteCollection {
         
         tag.get(use: getTag)
         tag.post(use: addTag)
+        tag.delete("appinfo", use: deleteTagFromAppInfo)
         tag.post("appinfo", use: addTagToAppInfo)
     }
     
@@ -70,6 +71,44 @@ struct TagController: RouteCollection {
         try await newAppInfoTag.$appInfo.load(on: req.db)
         try await newAppInfoTag.$tag.load(on: req.db)
         return newAppInfoTag
+    }
+    
+    func deleteTagFromAppInfo(req: Request) async throws -> RequestResult {
+        guard let addTagRequest = try? req.content.decode(TaggingRequest.self) else {
+            throw Abort(.decodingError(TaggingRequest.self))
+        }
+        
+        guard let tagBy = addTagRequest.by else {
+            throw Abort(.notEnoughArguments("tagId or tagName"))
+        }
+        
+        guard let tag = try await Tag.query(on: req.db).group(.or, { group in
+            switch tagBy {
+            case let .id(id):
+                group.filter(\.$id, .equal, id)
+            case let .name(name):
+                group.filter(\.$name, .equal, name)
+            }
+        })
+        .first() else {
+            switch tagBy {
+            case let .id(id):
+                throw Abort(.existenceError("tag, id: \(id)"))
+            case let .name(name):
+                throw Abort(.existenceError("tag, name: \(name)"))
+            }
+        }
+        
+        guard let pivot = try await AppInfoTagPivot.query(on: req.db)
+            .filter(\.$tag.$id, .equal, try tag.requireID())
+            .filter(\.$appInfo.$id, .equal, addTagRequest.appInfoId)
+            .first() else {
+            throw Abort(.existenceError("pivot app:\(addTagRequest.appInfoId.uuidString) tag:\(try tag.requireID().uuidString)"))
+        }
+        
+        try await pivot.delete(on: req.db)
+        
+        return .init(code: 200, isSuccess: true, message: "Deleted 1 app-tag pivot")
     }
     
 }
