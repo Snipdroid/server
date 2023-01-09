@@ -14,7 +14,7 @@ struct TagController: RouteCollection {
         
         tag.get(use: getTag)
         tag.post(use: addTag)
-        tag.post("appInfo", use: addTagToAppInfo)
+        tag.post("appinfo", use: addTagToAppInfo)
     }
     
     func getTag(req: Request) async throws -> Tag {
