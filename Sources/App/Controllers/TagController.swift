@@ -40,12 +40,29 @@ struct TagController: RouteCollection {
             throw Abort(.decodingError(TaggingRequest.self))
         }
         
+        guard let tagBy = addTagRequest.by else {
+            throw Abort(.notEnoughArguments("tagId or tagName"))
+        }
+        
         guard let appInfo = try await AppInfo.query(on: req.db).filter(\.$id, .equal, addTagRequest.appInfoId).first() else {
             throw Abort(.existenceError("appInfo, id: \(addTagRequest.appInfoId)"))
         }
         
-        guard let tag = try await Tag.query(on: req.db).filter(\.$id, .equal, addTagRequest.tagId).first() else {
-            throw Abort(.existenceError("tag, id: \(addTagRequest.tagId)"))
+        guard let tag = try await Tag.query(on: req.db).group(.or, { group in
+            switch tagBy {
+            case let .id(id):
+                group.filter(\.$id, .equal, id)
+            case let .name(name):
+                group.filter(\.$name, .equal, name)
+            }
+        })
+        .first() else {
+            switch tagBy {
+            case let .id(id):
+                throw Abort(.existenceError("tag, id: \(id)"))
+            case let .name(name):
+                throw Abort(.existenceError("tag, name: \(name)"))
+            }
         }
         
         let newAppInfoTag = try AppInfoTagPivot(appInfo: appInfo, tag: tag)

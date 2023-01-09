@@ -9,8 +9,24 @@ import Fluent
 import Vapor
 
 struct TaggingRequest: Codable {
-    let tagId: UUID
+    let tagId: UUID?
+    let tagName: String?
     let appInfoId: UUID
+    
+    enum TagBy {
+        case id(UUID)
+        case name(String)
+    }
+    
+    var by: TagBy? {
+        if let tagId {
+            return .id(tagId)
+        } else if let tagName {
+            return .name(tagName)
+        } else {
+            return nil
+        }
+    }
 }
 
 final class AppInfoTagPivot: Model, Content {
