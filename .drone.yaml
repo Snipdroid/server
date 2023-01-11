@@ -2,7 +2,12 @@ kind: pipeline
 name: default
 
 steps:
-  - name: server
+  - name: build-server
     image: plugins/docker
     settings:
-      dry_run: true
+      username: 
+        from_secret: docker_username
+      password: 
+        from_secret: docker_password
+      repo: butanediol/apptracker
+      tags: dev
