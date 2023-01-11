@@ -1,0 +1,8 @@
+kind: pipeline
+name: default
+
+steps:
+  - name: server
+    image: plugins/docker
+    settings:
+      dry_run: true
