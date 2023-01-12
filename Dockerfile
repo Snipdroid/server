@@ -1,6 +1,17 @@
 # ================================
 # Build image
 # ================================
+FROM node:18-alpine as frontend
+RUN apk add git
+RUN git clone https://github.com/Oblatum/App-Tracker-for-Icon-Pack-Web.git /root/frontend
+WORKDIR /root/frontend
+RUN git checkout dev
+RUN npm install
+RUN npm run build
+
+# ================================
+# Build image
+# ================================
 FROM swift:5.7-jammy as build
 
 # Install OS updates and, if needed, sqlite3
@@ -54,6 +65,9 @@ WORKDIR /app
 
 # Copy built executable and any staged resources from builder
 COPY --from=build --chown=vapor:vapor /staging /app
+
+# Copy frontend resources from builder
+COPY --from=frontend --chown=vapor:vapor /root/frontend/dist /app/public
 
 # Ensure all further commands run as the vapor user
 USER vapor:vapor
