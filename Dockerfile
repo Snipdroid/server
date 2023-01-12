@@ -67,7 +67,7 @@ WORKDIR /app
 COPY --from=build --chown=vapor:vapor /staging /app
 
 # Copy frontend resources from builder
-COPY --from=frontend --chown=vapor:vapor /root/frontend/dist /app/public
+COPY --from=frontend --chown=vapor:vapor /root/frontend/dist /app/Public
 
 # Ensure all further commands run as the vapor user
 USER vapor:vapor
