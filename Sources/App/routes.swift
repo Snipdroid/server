@@ -2,9 +2,9 @@ import Fluent
 import Vapor
 
 func routes(_ app: Application) throws {
-    app.get { req async throws -> Response in
-        req.redirect(to: "/index.html")
-    }
+//    app.get { req async throws -> Response in
+//        req.redirect(to: "/index.html")
+//    }
 
     try app.register(collection: AppInfoController())
     try app.register(collection: IconController())

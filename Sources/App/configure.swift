@@ -68,6 +68,6 @@ private func configureMiddleware(_ app: Application) {
     let cors = CORSMiddleware(configuration: corsConfiguration)
     app.middleware.use(cors, at: .beginning)
     app.middleware.use(CacheControlMiddleware())
-    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory, defaultFile: "index.html"))
     app.middleware.use(app.sessions.middleware)
 }
