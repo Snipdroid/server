@@ -1,13 +1,19 @@
 import Vapor
 
-struct CacheControlMiddleware: Middleware {
-    func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
-        return next.respond(to: request).map { response in
-            if request.method == .GET {
-                response.headers.add(name: "access-control-max-age", value: "600")
-                response.headers.add(name: "cache-control", value: "max-age=600")
+struct AsyncCacheControlMiddleware: AsyncMiddleware {
+    func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
+        let response = try await next.respond(to: request)
+        if let contentType = response.headers.contentType {
+            switch (contentType.type, contentType.subType) {
+            case ("text", "javascript"), ("text", "css"), ("image", _):
+                response.headers.add(name: .cacheControl, value: "public, max-age=31536000")
+                response.headers.remove(name: .eTag)
+            case ("text", "html"):
+                response.headers.add(name: .cacheControl, value: "no-cache")
+            default:
+                break
             }
-            return response
         }
+        return response
     }
 }
