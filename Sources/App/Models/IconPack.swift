@@ -38,4 +38,8 @@ extension IconPack {
     struct Create: Content {
         let name: String
     }
+    
+    struct Delete: Content {
+        let id: UUID
+    }
 }

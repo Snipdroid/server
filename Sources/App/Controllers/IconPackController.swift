@@ -16,11 +16,14 @@ struct IconPackController: RouteCollection {
         iconPack.get("appinfo", use: getRequests)
         iconPack.delete("appinfo", use: deleteRequests)
         
-        routes.grouped(
+        let iconPackUserProtected = iconPack.grouped(
             UserAccount.sessionAuthenticator(),
             UserToken.authenticator(),
             UserAccount.authenticator()
-        ).post("api", "iconpack", "new", use: newIconPack)
+        )
+        
+        iconPackUserProtected.post("new", use: newIconPack)
+        iconPackUserProtected.delete("delete", use: deleteIconPack)
     }
     /*
      GET /api/iconpack/appinfo?iconpackid=
@@ -84,5 +87,30 @@ struct IconPackController: RouteCollection {
         let iconPack = IconPack(name: create.name, designer: user?.id, accessToken: user?.generateTokenValue())
         try await iconPack.save(on: req.db)
         return iconPack
+    }
+    
+    /*
+     DELETE /api/iconpack/delete
+     */
+    func deleteIconPack(req: Request) async throws -> RequestResult {
+        let delete = try req.content.decode(IconPack.Delete.self)
+
+        let user = req.auth.get(UserAccount.self)
+        
+        guard let iconPack = try await IconPack.query(on: req.db)
+            .with(\.$designer)
+            .filter(\.$id, .equal, delete.id)
+            .first()
+        else {
+            throw Abort(.existenceError("Icon Pack: \(delete.id.uuidString)"))
+        }
+        
+        guard try iconPack.designer?.requireID() == user?.id else {
+            throw Abort(.unauthorized)
+        }
+        
+        try await iconPack.delete(on: req.db)
+        
+        return .init(code: 200, isSuccess: true, message: "Icon pack \(iconPack.name) deleted.")
     }
 }
