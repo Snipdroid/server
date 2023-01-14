@@ -42,6 +42,7 @@ public func configure(_ app: Application) throws {
     app.migrations.add(CreateUserAccount())
     app.migrations.add(CreateUserToken())
     app.migrations.add(AddDesignerToIconPack())
+    app.migrations.add(AddSuggestedName())
 
     if let httpProxyAddr = Environment.get("HTTP_PROXY_ADDR"),
        let httpProxyPort = Environment.get("HTTP_PROXY_PORT"),

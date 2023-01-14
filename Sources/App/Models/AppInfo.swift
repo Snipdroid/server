@@ -21,6 +21,9 @@ final class AppInfo: Model, Content {
     
     @Children(for: \.$appInfo)
     var requests: [IconRequest]
+    
+    @OptionalField(key: "suggestedName")
+    var suggestedName: String?
 
     init() { }
 
