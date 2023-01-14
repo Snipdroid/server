@@ -70,4 +70,6 @@ extension AppInfo {
             self.activityName = appInfo.activityName
         }
     }
+    
+    typealias Created = Create
 }

@@ -25,7 +25,7 @@ struct IconPackController: RouteCollection {
     /*
      GET /api/iconpack/appinfo?iconpackid=
      */
-    func getRequests(req: Request) async throws -> Page<IconRequestDTO> {
+    func getRequests(req: Request) async throws -> Page<IconRequest.Created> {
         guard let iconPackId: String = req.query["iconpackid"],
               let iconPackUuid = UUID(uuidString: iconPackId) else {
             throw Abort(
@@ -44,7 +44,7 @@ struct IconPackController: RouteCollection {
 
         let requests = try await iconPack.$requests.query(on: req.db).with(\.$appInfo).all()
         return try requests.map {
-            IconRequestDTO(iconRequestId: $0.id, count: $0.count, appInfo: AppInfo.Create($0.appInfo))
+            IconRequest.Created(id: $0.id, count: $0.count, appInfo: AppInfo.Created($0.appInfo))
         }.paginate(for: req)
     }
     

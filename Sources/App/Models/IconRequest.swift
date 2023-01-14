@@ -8,12 +8,6 @@
 import Fluent
 import Vapor
 
-struct IconRequestDTO: Codable {
-    let iconRequestId: UUID?
-    let count: Int
-    let appInfo: AppInfo.Create
-}
-
 final class IconRequest: Model, Content {
     static let schema = "icon_requests"
 
@@ -36,5 +30,13 @@ final class IconRequest: Model, Content {
         self.count = count
         self.$fromIconPack.id = iconPackId
         self.$appInfo.id = appInfoId
+    }
+}
+
+extension IconRequest {
+    struct Created: Codable {
+        let id: UUID?
+        let count: Int
+        let appInfo: AppInfo.Create
     }
 }
