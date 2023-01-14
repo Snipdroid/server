@@ -37,21 +37,6 @@ final class AppInfo: Model, Content {
         self.packageName = create.packageName
         self.activityName = create.activityName
     }
-
-    static func getExample() -> AppInfo {
-        AppInfo(
-            id: UUID(), 
-            appName: "Example App", 
-            packageName: "com.example\(Int.random()).app", 
-            activityName: "example\(Int.random()).activity"
-        )
-    }
-
-    func regexSearch(_ key: KeyPath<AppInfo, String>, with pattern: String) throws -> Bool {
-        let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-        let stringRange = NSRange(location: 0, length: self[keyPath: key].utf16.count)
-        return regex.firstMatch(in: self[keyPath: key], range: stringRange) != nil
-    }
     
     var count: Int {
         self.requests.reduce(into: 0) { $0 += $1.count }
