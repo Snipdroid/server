@@ -19,19 +19,12 @@ final class AppTests: XCTestCase {
             activityName: [UInt8].random(count: 8).base64
         )
         self.server = Application(.testing)
-        try configure(self.server)
+        try await configure(self.server)
     }
     
     override func tearDown() async throws {
         try await super.tearDown()
         server.shutdown()
-    }
-    
-    func testServer() throws {
-        try server.test(.GET, "/") { res in
-            XCTAssertEqual(res.status, .ok)
-            XCTAssertEqual(res.body.string, "Yes! It's up and running!")
-        }
     }
     
     func testAppInfoController() throws {

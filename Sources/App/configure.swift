@@ -3,10 +3,7 @@ import FluentPostgresDriver
 import Vapor
 
 // configures your application
-public func configure(_ app: Application) throws {
-    // uncomment to serve files from /Public folder
-    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
-
+public func configure(_ app: Application) async throws {
     configureHttp(app)
     configureMiddleware(app)
 
@@ -28,22 +25,15 @@ public func configure(_ app: Application) throws {
         app.logger.info("Using local storage. Please make sure ./data/icons directory exists.")
     }
 
+    // PostgreSQL Database
     guard let postgresUrl = Environment.get("POSTGRES_URL") else {
         app.logger.error("Environment variable POSTGRES_URL not found in .env file.")
         exit(1)
     }
     try app.databases.use(.postgres(url: postgresUrl), as: .psql)
-    app.migrations.add(CreateAppInfo())
-    app.migrations.add(RemoveSignature())
-    app.migrations.add(CreateIconPack())
-    app.migrations.add(CreateIconRequest())
-    app.migrations.add(CreateTag())
-    app.migrations.add(CreateAppInfoTagPivot())
-    app.migrations.add(CreateUserAccount())
-    app.migrations.add(CreateUserToken())
-    app.migrations.add(AddDesignerToIconPack())
-    app.migrations.add(AddSuggestedName())
+    try await migrate(app)
 
+    // Optional HTTP Proxy
     if let httpProxyAddr = Environment.get("HTTP_PROXY_ADDR"),
        let httpProxyPort = Environment.get("HTTP_PROXY_PORT"),
        let httpProxyPortNumber = Int(httpProxyPort)
@@ -54,6 +44,20 @@ public func configure(_ app: Application) throws {
 
     // register routes
     try routes(app)
+}
+
+private func migrate(_ app: Application) async throws {
+    app.migrations.add(CreateAppInfo())
+    app.migrations.add(RemoveSignature())
+    app.migrations.add(CreateIconPack())
+    app.migrations.add(CreateIconRequest())
+    app.migrations.add(CreateTag())
+    app.migrations.add(CreateAppInfoTagPivot())
+    app.migrations.add(CreateUserAccount())
+    app.migrations.add(CreateUserToken())
+    app.migrations.add(AddDesignerToIconPack())
+    app.migrations.add(AddSuggestedName())
+    try await app.autoMigrate()
 }
 
 private func configureHttp(_ app: Application) {
