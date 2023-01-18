@@ -41,6 +41,9 @@ public func configure(_ app: Application) async throws {
         app.logger.info("Using http proxy http://\(httpProxyAddr):\(httpProxyPortNumber)")
         app.http.client.configuration.proxy = .server(host: httpProxyAddr, port: httpProxyPortNumber)
     }
+    
+    // Session Driver
+    app.sessions.use(.fluent)
 
     // register routes
     try routes(app)
@@ -57,6 +60,7 @@ private func migrate(_ app: Application) async throws {
     app.migrations.add(CreateUserToken())
     app.migrations.add(AddDesignerToIconPack())
     app.migrations.add(AddSuggestedName())
+    app.migrations.add(SessionRecord.migration)
     try await app.autoMigrate()
 }
 
