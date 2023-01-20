@@ -111,20 +111,13 @@ struct AppInfoController: RouteCollection {
     }
 
     private func normalSearch(_ searchText: String, for req: Request) -> QueryBuilder<AppInfo> {
-        let searchTextMatrix = searchText.split(separator: "|").map { $0.split(separator: " ") }
+        let searchTextArray = searchText.split(separator: " ")
         return AppInfo.query(on: req.db)
             .group(.or) { group in
-                for col in searchTextMatrix {
-                    group.group(.and) { subgroup in
-                        for word in col {
-                            subgroup.group(.or) { subsubgroup in
-                                subsubgroup
-                                    .filter(\.$appName, .custom("ILIKE"), "%\(word)%")
-                                    .filter(\.$packageName ~~ String(word))
-                                    .filter(\.$activityName ~~ String(word))
-                            }
-                        }
-                    }
+                searchTextArray.forEach { keyword in
+                    group.filter(\.$appName, .custom("ILIKE"), "%\(keyword)%")
+                    group.filter(\.$packageName ~~ String(keyword))
+                    group.filter(\.$activityName ~~ String(keyword))
                 }
             }
             .sort(.sql(raw: "similarity(app_name, '\(searchText)') DESC"))
