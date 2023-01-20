@@ -10,8 +10,9 @@ import Fluent
 
 struct AddCreateTimeToAppInfo: AsyncMigration {
     func prepare(on database: Database) async throws {
+        let dateString = ISO8601DateFormatter().string(from: Date())
         try await database.schema("app_infos")
-            .field("createdAt", .datetime, .required, .sql(.default(Date().ISO8601Format())))
+            .field("createdAt", .datetime, .required, .sql(.default(dateString)))
             .update()
     }
     
