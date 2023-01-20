@@ -16,6 +16,9 @@ final class AppInfo: Model, Content {
     @Field(key: "activity_name")
     var activityName: String
     
+    @Field(key: "count")
+    var count: Int
+    
     @Siblings(through: AppInfoTagPivot.self, from: \.$appInfo, to: \.$tag)
     var tags: [Tag]
     
@@ -24,6 +27,9 @@ final class AppInfo: Model, Content {
     
     @OptionalField(key: "suggestedName")
     var suggestedName: String?
+    
+    @Timestamp(key: "createdAt", on: .create)
+    var createdAt: Date?
 
     init() { }
 
@@ -32,6 +38,7 @@ final class AppInfo: Model, Content {
         self.appName = appName
         self.packageName = packageName
         self.activityName = activityName
+        self.count = 0
     }
 
     init(_ create: AppInfo.Create) {
@@ -39,10 +46,7 @@ final class AppInfo: Model, Content {
         self.appName = create.appName
         self.packageName = create.packageName
         self.activityName = create.activityName
-    }
-    
-    var count: Int {
-        self.requests.reduce(into: 0) { $0 += $1.count }
+        self.count = 0
     }
 }
 

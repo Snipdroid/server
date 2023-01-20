@@ -49,6 +49,8 @@ struct AppInfoController: RouteCollection {
 
         if let oldAppInfo = oldAppInfo {
             // If already exists, use the old one.
+            oldAppInfo.count += 1
+            try await oldAppInfo.update(on: req.db)
             return oldAppInfo
         } else {
             // If not exists, create and use the new one.

@@ -16,14 +16,12 @@ struct RemoveSignature: AsyncMigration {
 
         try await database.schema("app_infos")
             .deleteField("signature")
-            .deleteField("count")
             .update()
     }
 
     func revert(on database: Database) async throws {
         try await database.schema("app_infos")
             .field("signature", .string, .required)
-            .field("count", .int, .required)
             .update()
     }
 }
