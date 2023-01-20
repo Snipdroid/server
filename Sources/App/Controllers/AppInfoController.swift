@@ -33,6 +33,8 @@ struct AppInfoController: RouteCollection {
         }
 
         return try await buildQuery
+            .sort(\.$createdAt, .descending) // Newest first
+            .sort(\.$count, .descending) // Frequency first
             .paginate(for: req)
     }
 
