@@ -14,9 +14,9 @@ struct CreateUserAccount: AsyncMigration {
             .field("name", .string, .required)
             .field("email", .string, .required)
             .field("password_hash", .string, .required)
-            .field("created_at", .date)
-            .field("last_changed_at", .date)
-            .field("deleted_at", .date)
+            .field("created_at", .datetime)
+            .field("last_changed_at", .datetime)
+            .field("deleted_at", .datetime)
             .unique(on: "email")
             .create()
     }
