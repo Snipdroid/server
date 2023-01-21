@@ -23,6 +23,9 @@ final class UserAccount: Model, Content {
     @Field(key: "password_hash")
     var passwordHash: String
     
+    @Field(key: "is_admin")
+    var isAdmin: Bool
+    
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
     
