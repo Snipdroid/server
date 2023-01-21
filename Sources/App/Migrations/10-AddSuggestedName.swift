@@ -11,13 +11,13 @@ import Fluent
 struct AddSuggestedName: AsyncMigration {
     func prepare(on database: Database) async throws {
         try await database.schema("app_infos")
-            .field("suggestedName", .string)
+            .field("suggested_name", .string)
             .update()
     }
     
     func revert(on database: Database) async throws {
         try await database.schema("app_infos")
-            .deleteField("suggestedName")
+            .deleteField("suggested_name")
             .update()
     }
 }

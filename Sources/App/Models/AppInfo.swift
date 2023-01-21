@@ -25,10 +25,10 @@ final class AppInfo: Model, Content {
     @Children(for: \.$appInfo)
     var requests: [IconRequest]
     
-    @OptionalField(key: "suggestedName")
+    @OptionalField(key: "suggested_name")
     var suggestedName: String?
     
-    @Timestamp(key: "createdAt", on: .create)
+    @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
     init() { }

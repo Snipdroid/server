@@ -62,7 +62,6 @@ private func migrate(_ app: Application) async throws {
     app.migrations.add(AddSuggestedName())
     app.migrations.add(SessionRecord.migration)
     app.migrations.add(AddCreateTimeToAppInfo())
-    try await app.autoMigrate()
 }
 
 private func configureHttp(_ app: Application) {
