@@ -1,5 +1,4 @@
 import Fluent
-import FluentSQL
 import Vapor
 
 struct AppInfoController: RouteCollection {
