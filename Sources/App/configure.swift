@@ -61,7 +61,7 @@ private func migrate(_ app: Application) async throws {
     app.migrations.add(AddDesignerToIconPack())
     app.migrations.add(AddSuggestedName())
     app.migrations.add(SessionRecord.migration)
-    app.migrations.add(AddCreateTimeToAppInfo())
+    app.migrations.add(AddTimestampToAppInfo())
 }
 
 private func configureHttp(_ app: Application) {

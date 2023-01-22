@@ -31,6 +31,9 @@ final class AppInfo: Model, Content {
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
+    @Timestamp(key: "updated_at", on: .update)
+    var updatedAt: Date?
+
     init() { }
 
     init(id: UUID? = nil, appName: String, packageName: String, activityName: String) {
