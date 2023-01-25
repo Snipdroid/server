@@ -50,6 +50,7 @@ public func configure(_ app: Application) async throws {
 }
 
 private func migrate(_ app: Application) async throws {
+    app.migrations.add(CreateExtension())
     app.migrations.add(CreateAppInfo())
     app.migrations.add(RemoveSignature())
     app.migrations.add(CreateIconPack())
