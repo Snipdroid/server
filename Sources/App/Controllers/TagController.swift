@@ -36,7 +36,7 @@ struct TagController: RouteCollection {
         return newTag
     }
     
-    func addTagToAppInfo(req: Request) async throws -> AppInfoTagPivot {
+    func addTagToAppInfo(req: Request) async throws -> HTTPStatus {
         guard let addTagRequest = try? req.content.decode(TaggingRequest.self) else {
             throw Abort(.decodingError(TaggingRequest.self))
         }
@@ -45,7 +45,10 @@ struct TagController: RouteCollection {
             throw Abort(.notEnoughArguments("tagId or tagName"))
         }
         
-        guard let appInfo = try await AppInfo.query(on: req.db).filter(\.$id, .equal, addTagRequest.appInfoId).first() else {
+        guard let appInfo = try await AppInfo.query(on: req.db)
+            .filter(\.$id, .equal, addTagRequest.appInfoId)
+            .first()
+        else {
             throw Abort(.existenceError("appInfo, id: \(addTagRequest.appInfoId)"))
         }
         
@@ -66,11 +69,8 @@ struct TagController: RouteCollection {
             }
         }
         
-        let newAppInfoTag = try AppInfoTagPivot(appInfo: appInfo, tag: tag)
-        try await newAppInfoTag.save(on: req.db)
-        try await newAppInfoTag.$appInfo.load(on: req.db)
-        try await newAppInfoTag.$tag.load(on: req.db)
-        return newAppInfoTag
+        try await appInfo.$tags.attach(tag, method: .ifNotExists, on: req.db)
+        return .ok
     }
     
     func deleteTagFromAppInfo(req: Request) async throws -> RequestResult {
