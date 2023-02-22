@@ -1,5 +1,7 @@
 ## 给图标包作者的数据库 - 服务端
 
+您当前位于 **开发分支**，请注意，此分支可能不稳定。
+
 ![API](https://img.shields.io/website?down_color=lightgrey&down_message=Offline&label=API&up_color=green&up_message=Online&url=https%3A%2F%2Fapptracker-api.cn2.tiers.top)
 ![Website](https://img.shields.io/website?down_color=lightgrey&down_message=Offline&label=Website&up_color=green&up_message=Online&url=https%3A%2F%2Fapp-tracker.butanediol.me)
 
@@ -19,7 +21,7 @@
 
 ### API
 
-[OpenAPI 3.0](https://github.com/Oblatum/App-Tracker-for-Icon-Pack-Server-Side/blob/main/OpenAPI.yaml)
+查看[API 文档](https://www.apifox.cn/apidoc/shared-ecf7eba1-36c2-4237-a2d2-ffcf0d071833/api-43668452)
 
 ### 本项目提供什么？
 
@@ -27,22 +29,20 @@
 - 客户端应用信息上传功能 -> [去上传](https://github.com/Oblatum/App-Tracker-for-Icon-Pack-Client-Side-Android-Version/releases)
 - 图标包申请统计功能（需要图标包客户端支持，API 文档施工中，试用请提交 Issue）
 
-### 如何搭建服务端？
+### Getting Started
 
-#### Docker
+#### Quick Start with Docker
+
+Prebuilt Image: `butanediol/apptracker`
+
+Available tags: `latest`, `dev`
 
 ##### Docker Compose
 
 1. 安装 Docker 环境。修改 `docker-compose.yaml` 文件中你需要修改的变量（可选）。
 2. 运行 `docker compose up -d` 启动本体和数据库
 3. 运行 `docker compose up migrate` 进行数据库迁移
-4. 在 postgresql 数据库中运行，`CREATE EXTENSION pg_trgm;`
-> ```bash
-> $ docker exec -it <container> /bin/bash
-> # psql -U <database_username>
-> database_username=# CREATE EXTENSION pg_trgm;
-> ```
-5. 大功告成。
+4. 大功告成。
 
 服务端使用 [Vapor]() 搭建而成，你可以参考 [Vapor 的官方文档](https://docs.vapor.codes)，其中包含[如何使用 Docker 来启动服务](https://docs.vapor.codes/4.0/deploy/docker/)。
 
@@ -52,4 +52,4 @@
 
 如果你使用 Debian/Ubuntu，你还可以使用 [Swift Community Apt Repository](https://www.swiftlang.xyz)，通过 `apt` 包管理器进行安装。
 
-⚠️ 注意，构建完成后，首次运行前请先迁移数据库，运行 `.build/release/Run migrate`，你可能需要将二进制可执行文件路径替换成你的实际路径。
+⚠️ 注意，构建完成后，首次运行前请先迁移数据库，运行 `./.build/release/Run migrate`，你可能需要将二进制可执行文件路径替换成你的实际路径。
