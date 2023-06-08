@@ -6,6 +6,7 @@ RUN apk add git
 RUN git clone https://github.com/Oblatum/App-Tracker-for-Icon-Pack-Web.git /root/frontend
 WORKDIR /root/frontend
 RUN git checkout yanren-m
+ENV VITE_APP_BASE_API=/
 RUN npm install
 RUN npm run build
 
