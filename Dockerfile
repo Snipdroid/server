@@ -5,14 +5,14 @@ FROM node:18-alpine as frontend
 RUN apk add git
 RUN git clone https://github.com/Oblatum/App-Tracker-for-Icon-Pack-Web.git /root/frontend
 WORKDIR /root/frontend
-RUN git checkout dev
+RUN git checkout yanren-m
 RUN npm install
 RUN npm run build
 
 # ================================
 # Build image
 # ================================
-FROM swift:5.7-jammy as build
+FROM swift:5.8-jammy as build
 
 # Install OS updates and, if needed, sqlite3
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
@@ -51,7 +51,7 @@ RUN [ -d /build/Resources ] && { mv /build/Resources ./Resources && chmod -R a-w
 # ================================
 # Run image
 # ================================
-FROM swift:5.7-jammy-slim
+FROM swift:5.8-jammy-slim
 
 # Make sure all system packages are up to date.
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && \
