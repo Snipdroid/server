@@ -1,5 +1,6 @@
 import Fluent
 import FluentPostgresDriver
+import Leaf
 import Vapor
 
 // configures your application
@@ -44,6 +45,9 @@ public func configure(_ app: Application) async throws {
     
     // Session Driver
     app.sessions.use(.fluent)
+
+    // Leaf
+    app.views.use(.leaf)
 
     // register routes
     try routes(app)

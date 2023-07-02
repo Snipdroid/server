@@ -9,6 +9,38 @@ struct AppInfoController: RouteCollection {
         appInfos.post(use: add)
         appInfos.delete(use: delete)
         appInfos.patch(use: patch)
+
+        let web = routes.grouped("web")
+        web.get(use: index)
+    }
+
+    func index(req: Request) async throws -> View {
+        var buildQuery: QueryBuilder<AppInfo>
+
+        if let searchText: String = req.query["q"] {
+            buildQuery = normalSearch(searchText, for: req)
+        } else if let regexPattern: String = req.query["regex"] {
+            buildQuery = regexSearch(regexPattern, for: req)
+        } else {
+            buildQuery = AppInfo.query(on: req.db)
+                .with(\.$tags)
+                .with(\.$requests)
+        }
+
+        let apps = try await buildQuery.sort(\.$count, .descending).paginate(for: req).items
+
+        struct RenderContext: Content {
+            let apps: [AppInfo]
+            let searchText: String
+        }
+
+        return try await req.view.render(
+            "index", 
+            RenderContext(
+                apps: apps, 
+                searchText: req.query["q"] ?? "Search..."
+            )
+        )
     }
     
     /*

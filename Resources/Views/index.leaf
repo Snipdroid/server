@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>AppTracker</title>
+    </head>
+    <body>
+
+        <input type="search" placeholder="#(searchText)">
+        <button type="search" title="Search">Search</button>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>App</th>
+                    <th>Package Name</th>
+                    <th>Activity Name</th>
+                    <th>Popularity</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                #for(app in apps):
+                <tr>
+                    <td>#(app.appName)</td>
+                    <td>#(app.packageName)</td>
+                    <td>#(app.activityName)</td>
+                    <td>#(app.count)</td>
+                </tr>
+                #endfor        
+            </tbody>
+        </table>
+    </body>
+</html>
