@@ -10,8 +10,8 @@ import Fluent
 struct AddDesignerToIconPack: AsyncMigration {
     func prepare(on database: FluentKit.Database) async throws {
         try await database.schema("icon_packs")
-            .field("designer", .uuid, .references("user_accounts", "id"))
-            .field("access_token", .string)
+            .field("designer", .uuid, .references("user_accounts", "id"), .required)
+            .field("access_token", .string, .required)
             .unique(on: "access_token")
             .update()
     }

@@ -13,19 +13,19 @@ final class IconPack: Model, Content {
     @Children(for: \.$fromIconPack)
     var requests: [IconRequest]
 
-    @OptionalParent(key: "designer")
-    var designer: UserAccount?
+    @Parent(key: "designer")
+    var designer: UserAccount
     
     @Field(key: "access_token")
-    var accessToken: String?
+    var accessToken: String
     
     init() { }
 
     init(
         id: UUID? = nil,
         name: String,
-        designer: UserAccount.IDValue? = nil,
-        accessToken: String? = nil
+        designer: UserAccount.IDValue,
+        accessToken: String
     ) {
         self.id = id
         self.name = name
@@ -41,5 +41,26 @@ extension IconPack {
     
     struct Delete: Content {
         let id: UUID
+    }
+}
+
+extension IconPack: Equatable {
+    static func == (lhs: IconPack, rhs: IconPack) -> Bool {
+        return lhs.id == rhs.id && lhs.id != nil
+    }    
+}
+
+extension IconPack: ModelTokenAuthenticatable {
+    static var userKey: KeyPath<IconPack, Parent<UserAccount>> {
+        \IconPack.$designer
+    }
+
+    static var valueKey: KeyPath<IconPack, Field<String>> {
+        \IconPack.$accessToken
+    }
+
+    var isValid: Bool {
+        // No expiration
+        true
     }
 }

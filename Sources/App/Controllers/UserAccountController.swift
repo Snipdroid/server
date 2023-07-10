@@ -12,15 +12,15 @@ struct UserAccountController: RouteCollection {
         let users = routes.grouped("api", "users")
         users.post(use: createUser)
         
-        let userProtected = users
-            .grouped(
+        users.group(
                 UserAccount.sessionAuthenticator(),
                 UserToken.authenticator(),
                 UserAccount.authenticator()
-            )
+        ) {
+            $0.post("login", use: userLogin)
+            $0.get("iconpack", use: getUserIconPacks)
+        }
         
-        userProtected.post("login", use: userLogin)
-        userProtected.get("iconpack", use: getUserIconPacks)
     }
     
     func createUser(_ req: Request) async throws -> UserToken {

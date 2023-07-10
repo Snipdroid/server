@@ -17,6 +17,9 @@ final class IconRequest: Model, Content {
     @Field(key: "count")
     var count: Int
 
+    @Field(key: "version")
+    var version: String?
+
     @Parent(key: "icon_pack")
     var fromIconPack: IconPack
 
@@ -25,17 +28,24 @@ final class IconRequest: Model, Content {
 
     init() { }
 
-    init(id: UUID? = nil, count: Int = 1, from iconPackId: IconPack.IDValue, for appInfoId: AppInfo.IDValue) {
+    init(id: UUID? = nil, version: String? = nil, count: Int = 1, from iconPackId: IconPack.IDValue, for appInfoId: AppInfo.IDValue) {
         self.id = id
         self.count = count
+        self.version = version
         self.$fromIconPack.id = iconPackId
         self.$appInfo.id = appInfoId
     }
 }
 
 extension IconRequest {
+    struct Create: Codable {
+        let version: String?
+        let appInfo: AppInfo.IDValue
+    }
+
     struct Created: Codable {
         let id: UUID?
+        let version: String?
         let count: Int
         let appInfo: AppInfo.Create
     }
