@@ -12,12 +12,12 @@ import Vapor
 struct IconPackController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let iconPack = routes.grouped("api", "iconpack")
+        let requests = iconPack.grouped("requests")
         
-        iconPack.get("appinfo", use: getRequests)
-
-        iconPack.group(IconPack.authenticator()) {
-            $0.delete("appinfo", use: deleteRequests)
-            $0.post("appinfo", use: createNewRequest)
+        requests.get(use: getRequests)
+        requests.group(IconPack.authenticator()) {
+            $0.delete(use: deleteRequests)
+            $0.post(use: createNewRequest)
         }
         
         iconPack.group(
@@ -30,7 +30,7 @@ struct IconPackController: RouteCollection {
         }
     }
     /*
-     GET /api/iconpack/appinfo?iconpackid=
+     GET /api/iconpack/requests?iconpackid=
      Get all requests of an iconpack
      */
     func getRequests(req: Request) async throws -> Page<IconRequest.Created> {
