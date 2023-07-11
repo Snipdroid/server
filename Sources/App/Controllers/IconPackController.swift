@@ -58,7 +58,7 @@ struct IconPackController: RouteCollection {
     
     
     /*
-     DELETE /api/iconpack/appinfo
+     DELETE /api/iconpack/requests
      Delete requests
      */
     func deleteRequests(req: Request) async throws -> RequestResult {
@@ -85,7 +85,7 @@ struct IconPackController: RouteCollection {
     }
 
     /*
-     POST /api/iconpack/appinfo
+     POST /api/iconpack/requests
      Create request
      */
     func createNewRequest(req: Request) async throws -> [IconRequest] {
@@ -161,6 +161,7 @@ struct IconPackController: RouteCollection {
             throw Abort(.unauthorized)
         }
         
+        // TODO: - Delete all subordinate requests
         try await iconPack.delete(on: req.db)
         
         return .init(code: 200, isSuccess: true, message: "Icon pack \(iconPack.name) deleted.")
