@@ -12,10 +12,15 @@ struct TagController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let tag = routes.grouped("api", "tag")
         
+        tag.get("getAll", use: getAllTags)
         tag.get(use: getTag)
         tag.post(use: addTag)
         tag.delete("appinfo", use: deleteTagFromAppInfo)
         tag.post("appinfo", use: addTagToAppInfo)
+    }
+
+    private func getAllTags(req: Request) async throws -> [Tag]{
+        return try await Tag.query(on: req.db).all()
     }
     
     func getTag(req: Request) async throws -> Tag {
