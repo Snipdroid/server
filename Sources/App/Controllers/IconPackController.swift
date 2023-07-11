@@ -22,8 +22,7 @@ struct IconPackController: RouteCollection {
         
         iconPack.group(
             UserAccount.sessionAuthenticator(),
-            UserToken.authenticator(),
-            UserAccount.authenticator()
+            UserToken.authenticator()
         ) {
             $0.post("new", use: newIconPack)
             $0.delete("delete", use: deleteIconPack)
