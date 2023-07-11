@@ -7,8 +7,11 @@ struct AppInfoController: RouteCollection {
 
         appInfos.get(use: search)
         appInfos.post(use: add)
-        appInfos.delete(use: delete)
         appInfos.patch(use: patch)
+
+        #if DEBUG
+        appInfos.delete(use: delete)
+        #endif
     }
     
     /*
