@@ -12,7 +12,8 @@ struct AppInfoController: RouteCollection {
     }
     
     /*
-     GET /api/appInfo
+     GET /api/appinfo
+     Search app infos by keyword or regex pattern.
      Params:
         - q
         - regex
@@ -37,27 +38,31 @@ struct AppInfoController: RouteCollection {
             .paginate(for: req)
     }
 
-    func add(req: Request) async throws -> AppInfo {
+    /*
+     POST /api/appinfo
+     Create new app infos
+    */
+    func add(req: Request) async throws -> [AppInfo] {
 
-        let create = try req.content.decode(AppInfo.Create.self)
-        let newAppInfo = AppInfo(create)
+        return try await req.content.decode([AppInfo.Create].self).asyncMap { create in
+            let newAppInfo = AppInfo(create)
 
-        let oldAppInfo = try await AppInfo.query(on: req.db)
-            .filter(\.$packageName == newAppInfo.packageName)
-            .filter(\.$activityName == newAppInfo.activityName)
-            .with(\.$tags)
-            .first()
+            let oldAppInfo = try await AppInfo.query(on: req.db)
+                .filter(\.$packageName == newAppInfo.packageName)
+                .filter(\.$activityName == newAppInfo.activityName)
+                .with(\.$tags)
+                .first()
 
-        if let oldAppInfo = oldAppInfo {
-            // If already exists, use the old one.
-            oldAppInfo.count += 1
-            try await oldAppInfo.update(on: req.db)
-            return oldAppInfo
-        } else {
-            // If not exists, create and use the new one.
-            try await newAppInfo.save(on: req.db)
-            return newAppInfo
+            if let oldAppInfo = oldAppInfo {
+                // If already exists, use the old one.
+                oldAppInfo.count += 1
+                return (try? await oldAppInfo.update(on: req.db)) == nil ? nil : oldAppInfo
+            } else {
+                // If not exists, create and use the new one.
+                return (try? await newAppInfo.save(on: req.db)) == nil ? nil : newAppInfo
+            }
         }
+        .compactMap { $0 }
     }
     
     func delete(req: Request) async throws -> RequestResult {
