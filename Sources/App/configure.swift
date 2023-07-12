@@ -63,6 +63,7 @@ private func migrate(_ app: Application) async throws {
     app.migrations.add(AddSuggestedName())
     app.migrations.add(SessionRecord.migration)
     app.migrations.add(AddTimestampToAppInfo())
+    app.migrations.add(CreateAdaptRequestRecord())
 }
 
 private func configureHttp(_ app: Application) {

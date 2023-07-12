@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  AdaptRequest.swift
 //  
 //
 //  Created by Butanediol on 2022/12/31.
@@ -25,6 +25,9 @@ final class AdaptRequest: Model, Content {
 
     @Parent(key: "app_info")
     var appInfo: AppInfo
+
+    @Children(for: \.$belongsTo)
+    var records: [AdaptRequestRecord]
 
     init() { }
 
