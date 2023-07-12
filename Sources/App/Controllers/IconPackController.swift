@@ -32,7 +32,7 @@ struct IconPackController: RouteCollection {
      GET /api/iconpack/requests?iconpackid=
      Get all requests of an iconpack
      */
-    func getRequests(req: Request) async throws -> Page<IconRequest.Created> {
+    func getRequests(req: Request) async throws -> Page<AdaptRequest.Created> {
         guard let iconPackId: String = req.query["iconpackid"],
               let iconPackUuid = UUID(uuidString: iconPackId) else {
             throw Abort(
@@ -51,7 +51,7 @@ struct IconPackController: RouteCollection {
 
         let requests = try await iconPack.$requests.query(on: req.db).with(\.$appInfo).all()
         return try requests.map {
-            IconRequest.Created(id: $0.id, version: $0.version, count: $0.count, appInfo: AppInfo.Created($0.appInfo))
+            AdaptRequest.Created(id: $0.id, version: $0.version, count: $0.count, appInfo: AppInfo.Created($0.appInfo))
         }.paginate(for: req)
     }
     
@@ -67,7 +67,7 @@ struct IconPackController: RouteCollection {
         }
         
         // Collect all requests to be deleted
-        let deletionRequests = try await IconRequest.query(on: req.db)
+        let deletionRequests = try await AdaptRequest.query(on: req.db)
             .filter(\.$id ~~ uuidList)
             .with(\.$fromIconPack)
             .filter(\.$fromIconPack.$id, .equal, iconPack.id!)
@@ -87,16 +87,16 @@ struct IconPackController: RouteCollection {
      POST /api/iconpack/requests
      Create request
      */
-    func createNewRequest(req: Request) async throws -> [IconRequest] {
+    func createNewRequest(req: Request) async throws -> [AdaptRequest] {
         guard let iconPack = req.auth.get(IconPack.self) else {
             throw Abort(.unauthorized)
         }
 
-        return try await req.content.decode([IconRequest.Create].self).asyncMap { newIconRequestCreation in
+        return try await req.content.decode([AdaptRequest.Create].self).asyncMap { newAdaptRequestCreation in
             // Check existence
-            let preexistedRequests = try await IconRequest.query(on: req.db)
-                .filter(\.$appInfo.$id == newIconRequestCreation.appInfo)
-                .filter(\.$version == newIconRequestCreation.version)
+            let preexistedRequests = try await AdaptRequest.query(on: req.db)
+                .filter(\.$appInfo.$id == newAdaptRequestCreation.appInfo)
+                .filter(\.$version == newAdaptRequestCreation.version)
                 .filter(\.$fromIconPack.$id == (try iconPack.requireID()))
                 .all()
 
@@ -110,12 +110,12 @@ struct IconPackController: RouteCollection {
                 try await preexistedRequest.update(on: req.db)
                 return preexistedRequest
             } else {
-                let newRequest = IconRequest(
+                let newRequest = AdaptRequest(
                     id: UUID(), 
-                    version: newIconRequestCreation.version, 
+                    version: newAdaptRequestCreation.version, 
                     count: 1, 
                     from: try iconPack.requireID(), 
-                    for: newIconRequestCreation.appInfo
+                    for: newAdaptRequestCreation.appInfo
                 )
                 try await newRequest.create(on: req.db)
                 return newRequest

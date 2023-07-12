@@ -83,11 +83,11 @@ struct AppInfoController: RouteCollection {
         let deletedRequestCount = try await filterResult
             .compactMap { appInfo in appInfo.id }
             .asyncMap { uuid in
-                try await IconRequest.query(on: req.db).filter(\.$appInfo.$id, .equal, uuid).all()
+                try await AdaptRequest.query(on: req.db).filter(\.$appInfo.$id, .equal, uuid).all()
             }
             .flatMap { $0 }
-            .asyncMap { iconRequest in
-                try await iconRequest.delete(on: req.db)
+            .asyncMap { adaptRequest in
+                try await adaptRequest.delete(on: req.db)
             }
             .map { _ in 1 } // mapping deletions to 1 so that it's easier to accumulate
             .reduce(0, +)

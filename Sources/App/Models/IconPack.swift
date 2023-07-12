@@ -11,7 +11,7 @@ final class IconPack: Model, Content {
     var name: String
 
     @Children(for: \.$fromIconPack)
-    var requests: [IconRequest]
+    var requests: [AdaptRequest]
 
     @Parent(key: "designer")
     var designer: UserAccount

@@ -23,7 +23,7 @@ final class AppInfo: Model, Content {
     var tags: [Tag]
     
     @Children(for: \.$appInfo)
-    var requests: [IconRequest]
+    var requests: [AdaptRequest]
     
     @OptionalField(key: "suggested_name")
     var suggestedName: String?

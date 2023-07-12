@@ -54,7 +54,7 @@ private func migrate(_ app: Application) async throws {
     app.migrations.add(CreateAppInfo())
     app.migrations.add(RemoveSignature())
     app.migrations.add(CreateIconPack())
-    app.migrations.add(CreateIconRequest())
+    app.migrations.add(CreateAdaptRequest())
     app.migrations.add(CreateTag())
     app.migrations.add(CreateAppInfoTagPivot())
     app.migrations.add(CreateUserAccount())

@@ -8,8 +8,8 @@
 import Fluent
 import Vapor
 
-final class IconRequest: Model, Content {
-    static let schema = "icon_requests"
+final class AdaptRequest: Model, Content {
+    static let schema = "adapt_requests"
 
     @ID(key: .id)
     var id: UUID?
@@ -18,7 +18,7 @@ final class IconRequest: Model, Content {
     var count: Int
 
     @Field(key: "version")
-    var version: String?
+    var version: Int
 
     @Parent(key: "icon_pack")
     var fromIconPack: IconPack
@@ -28,7 +28,7 @@ final class IconRequest: Model, Content {
 
     init() { }
 
-    init(id: UUID? = nil, version: String? = nil, count: Int = 1, from iconPackId: IconPack.IDValue, for appInfoId: AppInfo.IDValue) {
+    init(id: UUID? = nil, version: Int, count: Int = 1, from iconPackId: IconPack.IDValue, for appInfoId: AppInfo.IDValue) {
         self.id = id
         self.count = count
         self.version = version
@@ -37,15 +37,15 @@ final class IconRequest: Model, Content {
     }
 }
 
-extension IconRequest {
+extension AdaptRequest {
     struct Create: Codable {
-        let version: String?
+        let version: Int
         let appInfo: AppInfo.IDValue
     }
 
     struct Created: Codable {
         let id: UUID?
-        let version: String?
+        let version: Int
         let count: Int
         let appInfo: AppInfo.Create
     }
