@@ -40,6 +40,11 @@ final class AdaptRequestRecord: Model, Content {
     }
 
     convenience init(_ request: AdaptRequest) throws {
-        self.init(version: request.version, from: request.$appInfo.id, for: request.$fromIconPack.id, belongsTo: try request.requireID())
+        self.init(
+            version: request.version, 
+            from: request.$fromIconPack.id, 
+            for: request.$appInfo.id, 
+            belongsTo: try request.requireID()
+        )
     }
 }

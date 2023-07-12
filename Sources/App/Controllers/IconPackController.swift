@@ -107,7 +107,7 @@ struct IconPackController: RouteCollection {
 
             if let preexistedRequest = preexistedRequests.first {
                 preexistedRequest.count += 1
-                return (try? await preexistedRequest.update(on: req.db)) == nil ? nil : preexistedRequest
+                return preexistedRequest
             } else {
                 let newRequest = AdaptRequest(
                     id: UUID(), 
@@ -116,14 +116,21 @@ struct IconPackController: RouteCollection {
                     from: try iconPack.requireID(), 
                     for: newAdaptRequestCreation.appInfo
                 )
-                return (try? await newRequest.create(on: req.db)) == nil ? nil : newRequest
+                return newRequest
             }
         }
-        .compactMap { $0 }
         .asyncMap { request in
-            try? await AdaptRequestRecord(request).create(on: req.db)
-            return request
+            let failure: ()? = try? await req.db.transaction { transation in
+                if request.count > 1 { // pre-existed
+                    try await request.update(on: transation)
+                } else {
+                    try await request.create(on: transation)
+                }
+                try await AdaptRequestRecord(request).create(on: transation)
+            }
+            return failure == nil ? nil : request
         }
+        .compactMap { $0 }
     }
     
     /*
