@@ -12,6 +12,7 @@ struct CreateTag: AsyncMigration {
         try await database.schema("tags")
             .id()
             .field("name", .string, .required)
+            .field("color", .uint32, .required)
             .unique(on: "name")
             .create()
     }
