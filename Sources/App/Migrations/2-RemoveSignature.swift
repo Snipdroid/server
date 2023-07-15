@@ -1,8 +1,8 @@
 import Fluent
 import Vapor
 
-private class AppInfoLegacy: Model, Equatable {
-    static func == (lhs: AppInfoLegacy, rhs: AppInfoLegacy) -> Bool {
+private class AppInfoLegacy: Model {
+    static func ~= (lhs: AppInfoLegacy, rhs: AppInfoLegacy) -> Bool {
         lhs.packageName == rhs.packageName &&
         lhs.activityName == rhs.activityName
     }
@@ -32,11 +32,11 @@ struct RemoveSignature: AsyncMigration {
 
         let appInfoList = try await AppInfoLegacy.query(on: database).all()
         for index in appInfoList.indices {
-            if appInfoList[index...].filter({ $0 == appInfoList[index] }).count > 1 {
+            if appInfoList[index...].filter({ $0 ~= appInfoList[index] }).count > 1 {
                 try await appInfoList[index].delete(on: database)
             }
             if ((index % 1000) == 0) {
-                print("\(index) / \(appInfoList.count)")
+                print("\r\(index) / \(appInfoList.count)")
             }
         }
 
