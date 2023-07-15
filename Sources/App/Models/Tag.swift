@@ -22,14 +22,24 @@ final class Tag: Model, Content {
 
     /// RGBA color
     @Field(key: "color")
-    var color: UInt32
+    var color: Int64
     
-    init(id: UUID? = nil, name: String, appInfos: [AppInfo], color: UInt32 = .random(in: UInt32.min...UInt32.max)) {
+    init(id: UUID? = nil, name: String, color: UInt32? = nil) {
         self.id = id
         self.name = name
-        self.appInfos = appInfos
-        self.color = color
+        self.color = Int64(color ?? .random(in: UInt32.min...UInt32.max))
+    }
+
+    convenience init(_ create: Create) {
+        self.init(name: create.name, color: create.color)
     }
     
     init() {}
+}
+
+extension Tag {
+    struct Create: Codable {
+        let name: String
+        let color: UInt32?
+    }
 }

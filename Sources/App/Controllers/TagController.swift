@@ -36,7 +36,7 @@ struct TagController: RouteCollection {
     }
 
     func addTag(req: Request) async throws -> Tag {
-        let newTag = try req.content.decode(Tag.self)
+        let newTag = Tag(try req.content.decode(Tag.Create.self))
         try await newTag.save(on: req.db)
         return newTag
     }
