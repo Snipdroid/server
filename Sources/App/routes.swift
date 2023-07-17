@@ -11,4 +11,11 @@ func routes(_ app: Application) throws {
     try app.register(collection: IconPackController())
     try app.register(collection: TagController())
     try app.register(collection: UserAccountController())
+
+    #if DEBUG
+    app.routes.get("shutdown") { request -> Bool in
+        app.shutdown()
+        return true
+    }
+    #endif
 }
