@@ -1,6 +1,7 @@
 import Fluent
 import FluentPostgresDriver
 import Vapor
+import Gatekeeper
 
 // configures your application
 public func configure(_ app: Application) async throws {
@@ -45,6 +46,10 @@ public func configure(_ app: Application) async throws {
     // Session Driver
     app.sessions.use(.fluent)
 
+    // Gatekeeper
+    app.caches.use(.memory)
+    app.gatekeeper.config = .init(maxRequests: 2, per: .second)
+
     // register routes
     try routes(app)
 }
@@ -81,4 +86,5 @@ private func configureMiddleware(_ app: Application) {
     app.middleware.use(AsyncCacheControlMiddleware())
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory, defaultFile: "index.html"))
     app.middleware.use(app.sessions.middleware)
+    app.middleware.use(GatekeeperMiddleware())
 }

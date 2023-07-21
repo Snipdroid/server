@@ -1,5 +1,6 @@
 import Fluent
 import Vapor
+import Gatekeeper
 
 struct IconPathRegex {
     static let googlePlay = try! NSRegularExpression(pattern: #"<meta\sproperty="og:image"\scontent="(https:\/\/play-lh\.googleusercontent\.com\/(?:\w|-)+)">"#, options: .anchorsMatchLines)
@@ -17,7 +18,8 @@ struct IconController: RouteCollection {
         icon.get("coolapk", use: getIconFromCoolapk)
 
         icon.get(use: getIcon)
-        icon.on(.POST, body: .collect(maxSize: "1mb"), use: newIcon)
+        icon.grouped(GatekeeperMiddleware(config: .init(maxRequests: 300, per: .hour)))
+            .on(.POST, body: .collect(maxSize: "1mb"), use: newIcon)
 
     }
 
