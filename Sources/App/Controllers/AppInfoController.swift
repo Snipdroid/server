@@ -23,6 +23,8 @@ struct AppInfoController: RouteCollection {
      */
     func search(req: Request) async throws -> Page<AppInfo> {
 
+        req.logger.debug("\(req.query)")
+
         var buildQuery: QueryBuilder<AppInfo>
 
         if let searchText: String = req.query["q"] {
