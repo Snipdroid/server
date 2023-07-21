@@ -45,6 +45,9 @@ public func configure(_ app: Application) async throws {
     // Session Driver
     app.sessions.use(.fluent)
 
+    // LogPipe
+    app.logPipe = LogPipe()
+
     // register routes
     try routes(app)
 }

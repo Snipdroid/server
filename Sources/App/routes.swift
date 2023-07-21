@@ -18,4 +18,18 @@ func routes(_ app: Application) throws {
         return true
     }
     #endif
+
+    app.webSocket("api", "logstream") { req, ws async in
+        ws.onText { ws, text async in
+            if text == "close" { try? await ws.close() }
+        }
+
+        while !ws.isClosed {
+            if let newLog = req.application.logPipe.newLog() {
+                try? await ws.send(newLog.description)
+            } else {
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+    }
 }
