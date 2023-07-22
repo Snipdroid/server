@@ -74,13 +74,13 @@ private func configureHttp(_ app: Application) {
 }
 
 private func configureMiddleware(_ app: Application) {
-//    let corsConfiguration = CORSMiddleware.Configuration(
-//        allowedOrigin: .all,
-//        allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
-//        allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
-//    )
-//    let cors = CORSMiddleware(configuration: corsConfiguration)
-//    app.middleware.use(cors, at: .beginning)
+    let corsConfiguration = CORSMiddleware.Configuration(
+        allowedOrigin: .all,
+        allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
+        allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
+    )
+    let cors = CORSMiddleware(configuration: corsConfiguration)
+    app.middleware.use(cors, at: .beginning)
     app.middleware.use(AsyncCacheControlMiddleware())
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory, defaultFile: "index.html"))
     app.middleware.use(app.sessions.middleware)
