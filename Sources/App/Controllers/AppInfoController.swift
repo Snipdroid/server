@@ -134,7 +134,7 @@ struct AppInfoController: RouteCollection {
                     group.filter(\.$activityName ~~ String(keyword))
                 }
             }
-            .sort(.sql(raw: "similarity(app_name, '\(searchText)') DESC"))
+            .sort(.sql(embed: "similarity(\(ident: "app_name"), \(bind: searchText)) DESC"))
             .with(\.$tags)
             .with(\.$requests)
     }
