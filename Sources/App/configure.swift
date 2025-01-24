@@ -1,12 +1,15 @@
 import NIOSSL
 import Fluent
 import FluentPostgresDriver
+import JWT
 import Vapor
 
 // configures your application
 public func configure(_ app: Application) async throws {
     // uncomment to serve files from /Public folder
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+
+    await app.jwt.keys.add(hmac: HMACKey(from: Environment.get("JWT_SECRET") ?? "jwt"), digestAlgorithm: .sha256)
 
     app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
@@ -23,9 +26,9 @@ public func configure(_ app: Application) async throws {
 }
 
 public func migrations(_ app: Application) async throws {
+    app.migrations.add(CreateDesigner())
     app.migrations.add(CreateAppInfo())
     app.migrations.add(CreateAppLocalizedName())
     app.migrations.add(CreateAppVersion())
     app.migrations.add(CreateRequestRecord())
-    app.migrations.add(CreateDesigner())
 }

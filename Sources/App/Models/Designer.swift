@@ -1,4 +1,5 @@
 import Fluent
+import Vapor
 
 import struct Foundation.Date
 import struct Foundation.UUID
@@ -28,6 +29,13 @@ final class Designer: Model, @unchecked Sendable {
     var createdAt: Date?
 
     init() {}
+
+    init(id: UUID? = nil, name: String, email: String, passwordHash: String) {
+        self.id = id
+        self.name = name
+        self.email = email
+        self.passwordHash = passwordHash
+    }
 }
 
 struct CreateDesigner: AsyncMigration {
