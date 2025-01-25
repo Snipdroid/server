@@ -24,12 +24,16 @@ final class AppInfo: Model, @unchecked Sendable {
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
+    @Field(key: "count")
+    var count: Int
+
     init() { }
 
-    init(id: UUID? = nil, packageName: String, mainActivity: String) {
+    init(id: UUID? = nil, packageName: String, mainActivity: String, count: Int = 0) {
         self.id = id
         self.packageName = packageName
         self.mainActivity = mainActivity
+        self.count = count
     }
 }
 
@@ -40,6 +44,7 @@ struct CreateAppInfo: AsyncMigration {
             .field("package_name", .string, .required)
             .field("main_activity", .string, .required)
             .field("created_at", .datetime)
+            .field("count", .int, .required, .custom("DEFAULT 0"))
             .create()
     }
 

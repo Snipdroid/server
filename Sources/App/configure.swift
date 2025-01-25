@@ -32,4 +32,5 @@ public func migrations(_ app: Application) async throws {
     app.migrations.add(CreateAppLocalizedName())
     app.migrations.add(CreateAppVersion())
     app.migrations.add(CreateRequestRecord())
+    app.migrations.add(CreateTrigger())
 }
