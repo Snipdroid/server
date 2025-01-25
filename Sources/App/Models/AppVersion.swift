@@ -15,12 +15,18 @@ final class AppVersion: Model, @unchecked Sendable {
     var designer: Designer
 
     @Field(key: "version_string")
-    var packageName: String
+    var versionString: String
 
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
     init() { }
+
+    init(id: UUID? = nil, designerId: Designer.IDValue, versionString: String) {
+        self.id = id
+        self.$designer.id = designerId
+        self.versionString = versionString
+    }
 }
 
 
