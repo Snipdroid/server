@@ -13,7 +13,7 @@ struct AppVersionController: RouteCollection {
         let designer = try req.auth.require(Designer.self)
 
         guard let designerId = try? designer.requireID() else {
-            throw Abort(.failedToAcquireID)
+            throw InternalError.failedToAcquireID(Designer.self)
         }
 
         let create = try req.content.decode(AppVersion.Create.self)
@@ -26,11 +26,11 @@ struct AppVersionController: RouteCollection {
             .filter(\.$designer.$id == designerId)
             .filter(\.$versionString == create.versionString)
             .first() else {
-            throw Abort(.failedToAcquireEntity)
+            throw InternalError.failedToAcquireEntity(AppVersion.self)
         }
 
         guard let appVersionId = try? appVersion.requireID() else {
-            throw Abort(.failedToAcquireID)
+            throw InternalError.failedToAcquireID(AppVersion.self)
         }
         
         let payload = AppVersion.Token(expiration: .init(value: create.expireAt), id: appVersionId)

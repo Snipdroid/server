@@ -6,7 +6,7 @@ struct AppInfoController: RouteCollection {
         let appInfo = routes.grouped("app-info")
 
         appInfo.get("search", use: search)
-        appInfo.post("create", use: create)
+        appInfo.grouped(AppVersionAuthenticator()).post("create", use: create)
     }
 
     @Sendable
@@ -32,12 +32,17 @@ struct AppInfoController: RouteCollection {
             queryBuilder = queryBuilder.filter(\.$mainActivity == byMainActivity)
         }
 
-        return try await queryBuilder.paginate(for: req)
+        return try await queryBuilder
+            .sort(\.$count, .descending)
+            .paginate(for: req)
     }
 
     @Sendable
     func create(req: Request) async throws -> AppInfo {
-        let create = try req.content.decode(AppInfo.Create.self)
+        let appVersionId = try? req.auth.require(AppVersion.self).requireID()
+        guard let create = try req.content.decode([AppInfo.Create].self).first else {
+            throw InternalError.decodingError(AppInfo.Create.self)
+        }
 
         // 1. Find or create an app info
         let appInfo = try await {
@@ -56,7 +61,7 @@ struct AppInfoController: RouteCollection {
         }()
 
         guard let appInfoId = try? appInfo.requireID() else {
-            throw Abort(.failedToAcquireID)
+            throw InternalError.failedToAcquireID(AppInfo.self)
         }
 
         // 2. Update or create a new localized name
@@ -80,7 +85,6 @@ struct AppInfoController: RouteCollection {
         }
 
         // 3. Record the request
-        let appVersionId = try? req.auth.require(AppVersion.self).requireID()
         let newRequestRecord = RequestRecord(appInfoId: appInfoId, appVersionId: appVersionId)
         try await newRequestRecord.save(on: req.db)
 

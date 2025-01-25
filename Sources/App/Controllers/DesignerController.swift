@@ -21,11 +21,11 @@ struct DesignerController: RouteCollection {
             .query(on: req.db)
             .filter(\.$email == register.email)
             .first() else {
-            throw Abort(.failedToAcquireEntity)
+            throw InternalError.failedToAcquireEntity(Designer.self)
         }
 
         guard let designerId = try? designer.requireID() else {
-            throw Abort(.failedToAcquireID)
+            throw InternalError.failedToAcquireID(Designer.self)
         }
 
         let expireAt = Date().addingTimeInterval(60 * 60 * 48)
@@ -37,7 +37,7 @@ struct DesignerController: RouteCollection {
     func login(req: Request) async throws -> Designer.DTO {
         let designer = try req.auth.require(Designer.self)
         guard let designerId = try? designer.requireID() else {
-            throw Abort(.failedToAcquireID)
+            throw InternalError.failedToAcquireID(Designer.self)
         }
 
         let expireAt = Date().addingTimeInterval(60 * 60 * 48)
