@@ -15,7 +15,7 @@ final class AppLocalizedName: Model, @unchecked Sendable {
     var appInfo: AppInfo
 
     @Field(key: "language_code")
-    var title: String
+    var languageCode: String
 
     @Field(key: "name")
     var name: String
@@ -27,6 +27,14 @@ final class AppLocalizedName: Model, @unchecked Sendable {
     var createdAt: Date?
 
     init() { }
+
+    init(id: UUID? = nil, appInfoId: UUID, languageCode: String, name: String, isPrimary: Bool) {
+        self.id = id
+        self.$appInfo.id = appInfoId
+        self.languageCode = languageCode
+        self.name = name
+        self.isPrimary = isPrimary
+    }
 }
 
 struct CreateAppLocalizedName: AsyncMigration {

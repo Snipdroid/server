@@ -1,4 +1,5 @@
 import Fluent
+import Vapor
 import struct Foundation.UUID
 import struct Foundation.Date
 
@@ -24,6 +25,12 @@ final class AppInfo: Model, @unchecked Sendable {
     var createdAt: Date?
 
     init() { }
+
+    init(id: UUID? = nil, packageName: String, mainActivity: String) {
+        self.id = id
+        self.packageName = packageName
+        self.mainActivity = mainActivity
+    }
 }
 
 struct CreateAppInfo: AsyncMigration {
@@ -40,3 +47,5 @@ struct CreateAppInfo: AsyncMigration {
         try await database.schema(AppInfo.schema).delete()
     }
 }
+
+extension AppInfo: Content {}

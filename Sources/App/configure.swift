@@ -26,6 +26,7 @@ public func configure(_ app: Application) async throws {
 }
 
 public func migrations(_ app: Application) async throws {
+    app.migrations.add(CreateExtension())
     app.migrations.add(CreateDesigner())
     app.migrations.add(CreateAppInfo())
     app.migrations.add(CreateAppLocalizedName())
