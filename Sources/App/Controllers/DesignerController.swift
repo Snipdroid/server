@@ -10,7 +10,7 @@ struct DesignerController: RouteCollection {
     }
 
     @Sendable
-    func register(req: Request) async throws -> [String: String] {
+    func register(req: Request) async throws -> Designer.DTO {
         try Designer.Register.validate(content: req)
         let register = try req.content.decode(Designer.Register.self)
 
@@ -30,13 +30,11 @@ struct DesignerController: RouteCollection {
 
         let expireAt = Date().addingTimeInterval(60 * 60 * 48)
         let payload = Designer.Token(expiration: .init(value: expireAt), id: designerId)
-        return try await [
-            "token": req.jwt.sign(payload)
-        ]
+        return try await designer.toDTO(token: req.jwt.sign(payload))
     }
 
     @Sendable
-    func login(req: Request) async throws -> [String: String] {
+    func login(req: Request) async throws -> Designer.DTO {
         let designer = try req.auth.require(Designer.self)
         guard let designerId = try? designer.requireID() else {
             throw Abort(.failedToAcquireID)
@@ -44,8 +42,6 @@ struct DesignerController: RouteCollection {
 
         let expireAt = Date().addingTimeInterval(60 * 60 * 48)
         let payload = Designer.Token(expiration: .init(value: expireAt), id: designerId)
-        return try await [
-            "token": req.jwt.sign(payload)
-        ]
+        return try await designer.toDTO(token: req.jwt.sign(payload))
     }
 }
