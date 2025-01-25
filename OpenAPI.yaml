@@ -1,0 +1,241 @@
+openapi: 3.0.0
+info:
+  title: App Tracker API
+  version: 1.0.0
+
+servers:
+  - url: http://127.0.0.1:8080
+    description: Local development server
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        reason:
+          type: string
+    
+    Designer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        token:
+          type: string
+        createdAt:
+          type: number
+          format: double
+          description: Milliseconds since 1970 with microsecond precision
+          example: 1699486183123.456
+    
+    DesignerRegister:
+      type: object
+      required:
+        - email
+        - password
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+          description: Designer's email address
+        name:
+          type: string
+          description: Designer's name
+        password:
+          type: string
+          minLength: 8
+          description: Password must be at least 8 characters long
+    
+    AppVersion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        versionString:
+          type: string
+        token:
+          type: string
+    
+    AppVersionCreate:
+      type: object
+      required:
+        - versionString
+        - expireAt
+      properties:
+        versionString:
+          type: string
+        expireAt:
+          type: number
+          format: double
+          description: Milliseconds since 1970 with microsecond precision
+          example: 1699486183123.456
+    
+    AppInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        packageName:
+          type: string
+        mainActivity:
+          type: string
+        localizedNames:
+          type: array
+          items:
+            type: object
+            properties:
+              languageCode:
+                type: string
+              name:
+                type: string
+              isPrimary:
+                type: boolean
+    
+    AppInfoCreate:
+      type: object
+      required:
+        - localizedName
+        - languageCode
+        - packageName
+        - mainActivity
+      properties:
+        localizedName:
+          type: string
+        languageCode:
+          type: string
+        packageName:
+          type: string
+        mainActivity:
+          type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /designer/register:
+    post:
+      summary: Register a new designer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DesignerRegister'
+      responses:
+        '200':
+          description: Successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Designer'
+  
+  /designer/login:
+    post:
+      summary: Login as designer
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully logged in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Designer'
+  
+  /app-version/create:
+    post:
+      summary: Create a new app version
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppVersionCreate'
+      responses:
+        '200':
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppVersion'
+  
+  /app-info/search:
+    get:
+      summary: Search app info
+      parameters:
+        - in: query
+          name: byName
+          schema:
+            type: string
+        - in: query
+          name: byPackageName
+          schema:
+            type: string
+        - in: query
+          name: byMainActivity
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: per
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AppInfo'
+                  metadata:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      per:
+                        type: integer
+                      total:
+                        type: integer
+  
+  /app-info/create:
+    post:
+      summary: Create or update app info
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/AppInfoCreate'
+      responses:
+        '200':
+          description: Successfully created/updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppInfo'

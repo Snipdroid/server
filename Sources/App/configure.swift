@@ -20,6 +20,14 @@ public func configure(_ app: Application) async throws {
         tls: .prefer(try .init(configuration: .clientDefault)))
     ), as: .psql)
 
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .millisecondsSince1970
+    ContentConfiguration.global.use(encoder: encoder, for: .json)
+
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .millisecondsSince1970
+    ContentConfiguration.global.use(decoder: decoder, for: .json)
+
     try await migrations(app)
     // register routes
     try routes(app)
