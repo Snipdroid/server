@@ -5,12 +5,12 @@ struct AppInfoController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let appInfo = routes.grouped("app-info")
 
-        appInfo.get(use: get)
-        appInfo.post(use: create)
+        appInfo.get("search", use: search)
+        appInfo.post("create", use: create)
     }
 
     @Sendable
-    func get(req: Request) async throws -> Page<AppInfo> {
+    func search(req: Request) async throws -> Page<AppInfo> {
         let query = try req.query.decode(AppInfo.Query.self)
 
         var queryBuilder: QueryBuilder<AppInfo> = AppInfo.query(on: req.db)
