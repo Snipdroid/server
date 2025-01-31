@@ -1,7 +1,8 @@
-import NIOSSL
 import Fluent
 import FluentPostgresDriver
 import JWT
+import NIOSSL
+import QueuesRedisDriver
 import Vapor
 
 // configures your application
@@ -10,6 +11,11 @@ public func configure(_ app: Application) async throws {
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
     await app.jwt.keys.add(hmac: HMACKey(from: Environment.get("JWT_SECRET") ?? "jwt"), digestAlgorithm: .sha256)
+
+    try app.queues.use(.redis(url: Environment.get("REDIS_URL") ?? "redis://localhost:6379"))
+    app.queues.add(DailySummaryJob())
+    app.queues.schedule(DailySummaryJob()).daily()
+    try app.queues.startInProcessJobs(on: .default)
 
     app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",
@@ -41,4 +47,5 @@ public func migrations(_ app: Application) async throws {
     app.migrations.add(CreateAppVersion())
     app.migrations.add(CreateRequestRecord())
     app.migrations.add(CreateTrigger())
+    app.migrations.add(CreateDailySummary())
 }

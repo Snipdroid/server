@@ -17,6 +17,8 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
         // 🍬 JSON Web Token signing and verification (JWT)
         .package(url: "https://github.com/vapor/jwt.git", from: "5.0.0"),
+        // 🚦 A queueing backend for Queues that uses Redis.
+        .package(url: "https://github.com/vapor/queues-redis-driver.git", from: "1.0.0"),
     ],
     targets: [
         .executableTarget(
@@ -28,6 +30,7 @@ let package = Package(
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "JWT", package: "jwt"),
+                .product(name: "QueuesRedisDriver", package: "queues-redis-driver")
             ],
             swiftSettings: swiftSettings
         ),
