@@ -14,6 +14,9 @@ final class AppVersion: Model, @unchecked Sendable {
     @Parent(key: "designer_id")
     var designer: Designer
 
+    @Children(for: \.$appVersion)
+    var requestRecords: [RequestRecord]
+
     @Field(key: "version_string")
     var versionString: String
 
@@ -37,6 +40,7 @@ struct CreateAppVersion: AsyncMigration {
             .field("designer_id", .uuid, .references(Designer.schema, "id"))
             .field("version_string", .string, .required)
             .field("created_at", .datetime)
+            .unique(on: "version_string")
             .create()
     }
 

@@ -18,9 +18,19 @@ struct AppVersionController: RouteCollection {
 
         let create = try req.content.decode(AppVersion.Create.self)
 
+        // 1. Ensure the app version does not already exist
+        guard try await AppVersion.query(on: req.db)
+            .filter(\.$designer.$id == designerId)
+            .filter(\.$versionString == create.versionString)
+            .first() == nil else {
+                throw InternalError.violationOfUniqueConstraint(AppVersion.self)
+            }
+
+        // 2. Create the app version
         let newAppVersion = AppVersion(designerId: designerId, versionString: create.versionString)
         try await newAppVersion.save(on: req.db)
 
+        // 3. Retrieve the app version and generate a token
         guard let appVersion = try await AppVersion
             .query(on: req.db)
             .filter(\.$designer.$id == designerId)
