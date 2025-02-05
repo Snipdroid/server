@@ -14,87 +14,39 @@ struct AppInfoController: RouteCollection {
     func search(req: Request) async throws -> Page<AppInfo> {
         let query = try req.query.decode(AppInfo.Query.self)
 
-        var sqlBuilder = (req.db as! PostgresDatabase).sql()
-            .select()
-            .column(
-                SQLQueryString("DISTINCT ON (app_infos.id) \(ident: AppInfo.schema).\(ident: "id")")
-            )
-
-        let columns: [SQLQueryString] = AppInfo.keys.map {
-            "\(ident: AppInfo.schema).\(ident: $0.description)"
-        }
-        sqlBuilder =
-            sqlBuilder
-            .columns(columns)
-            .from(AppInfo.schema)
+        var queryBuilder: QueryBuilder<AppInfo> = AppInfo.query(on: req.db)
+            .with(\.$localizedNames)
 
         if let byName = query.byName {
-            sqlBuilder =
-                sqlBuilder
-                .join(
-                    AppLocalizedName.schema,
-                    on: SQLQueryString("app_infos.id = app_localized_names.app_info_id")
+            let appInfoIds = try await AppLocalizedName.query(on: req.db)
+                .filter(\.$name, .custom("ILIKE"), "%\(byName)%")
+                .sort(
+                    .sql(
+                        embed:
+                            "similarity(\(idents: ["app_localized_names", "name"], joinedBy: "."), \(bind: byName)) DESC"
+                    )
                 )
-                .where(
-                    SQLQueryString("\(ident: AppLocalizedName.schema).\(ident: "name")"),
-                    SQLQueryString("ILIKE"),
-                    SQLQueryString("\(bind: "%\(byName)%")")
-                )
-                .orderBy(SQLQueryString("\(ident: AppInfo.schema).\(ident: "id")"))
-                .orderBy(
-                    SQLQueryString(
-                        "similarity(\(ident: AppLocalizedName.schema).\(ident: "name"), \(bind: byName))"
-                    ),
-                    SQLQueryString("DESC")
-                )
+                .all()
+                .uniqued(on: \.$appInfo.id)
+                .map(\.$appInfo.id)
+
+            queryBuilder = queryBuilder.filter(\.$id ~~ appInfoIds)
         }
 
         if let byPackageName = query.byPackageName {
-            sqlBuilder =
-                sqlBuilder
-                .where(
-                    SQLQueryString("\(ident: AppInfo.schema).\(ident: "package_name")"),
-                    .equal,
-                    SQLQueryString("\(bind: byPackageName)")
-                )
+            queryBuilder = queryBuilder.filter(\.$packageName == byPackageName)
+
         }
 
         if let byMainActivity = query.byMainActivity {
-            sqlBuilder =
-                sqlBuilder
-                .where(
-                    SQLQueryString("\(ident: AppInfo.schema).\(ident: "main_activity")"),
-                    .equal,
-                    SQLQueryString("\(bind: byMainActivity)")
-                )
+            queryBuilder = queryBuilder.filter(\.$mainActivity == byMainActivity)
+
         }
 
-        sqlBuilder = sqlBuilder.orderBy(
-            SQLQueryString("\(ident: AppInfo.schema).\(ident: "count")"),
-            SQLQueryString("DESC")
-        )
-
-        guard
-            let total = try await (req.db as! PostgresDatabase).sql()
-                .select()
-                .column(SQLQueryString("COUNT(*)"))
-                .from(SQLQueryString("(\(sqlBuilder.query))"), as: SQLQueryString("subquery"))
-                .first(decodingColumn: "count", as: Int.self)
-        else {
-            throw InternalError.failedToAcquireEntity(Int.self)
-        }
-
-        let pageMetadata =
-            (try? req.query.decode(PageMetadata.self))
-            ?? PageMetadata(page: 0, per: 10, total: total)
-
-        let items =
-            try await sqlBuilder
-            .limit(pageMetadata.per)
-            .offset(pageMetadata.page * pageMetadata.per)
-            .all(decodingFluent: AppInfo.self)
-
-        return Page(items: items, metadata: pageMetadata)
+        return
+            try await queryBuilder
+            .sort(\.$count, .descending)
+            .paginate(for: req)
     }
 
     @Sendable

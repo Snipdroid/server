@@ -12,6 +12,9 @@ final class AppInfo: Model, @unchecked Sendable {
     @ID(key: .id)
     var id: UUID?
 
+    @Field(key: "default_name")
+    var defaultName: String
+
     @Children(for: \.$appInfo)
     var localizedNames: [AppLocalizedName]
 
@@ -29,8 +32,9 @@ final class AppInfo: Model, @unchecked Sendable {
 
     init() { }
 
-    init(id: UUID? = nil, packageName: String, mainActivity: String, count: Int = 0) {
+    init(id: UUID? = nil, defaultName: String, packageName: String, mainActivity: String, count: Int = 0) {
         self.id = id
+        self.defaultName = defaultName
         self.packageName = packageName
         self.mainActivity = mainActivity
         self.count = count
@@ -41,6 +45,7 @@ struct CreateAppInfo: AsyncMigration {
     func prepare(on database: Database) async throws {
         try await database.schema(AppInfo.schema)
             .id()
+            .field("default_name", .string, .required)
             .field("package_name", .string, .required)
             .field("main_activity", .string, .required)
             .field("created_at", .datetime)

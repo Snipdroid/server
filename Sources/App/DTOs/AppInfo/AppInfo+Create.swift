@@ -2,6 +2,7 @@ import Vapor
 
 extension AppInfo {
     struct Create: Content {
+        let defaultName: String
         let localizedName: String
         let languageCode: String
         let packageName: String
@@ -9,6 +10,6 @@ extension AppInfo {
     }
 
     convenience init(create: Create) {
-        self.init(id: UUID(), packageName: create.packageName, mainActivity: create.mainActivity)
+        self.init(id: UUID(), defaultName: create.defaultName, packageName: create.packageName, mainActivity: create.mainActivity)
     }
 }

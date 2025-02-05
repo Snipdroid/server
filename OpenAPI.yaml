@@ -103,11 +103,14 @@ components:
     AppInfoCreate:
       type: object
       required:
+        - defaultName
         - localizedName
         - languageCode
         - packageName
         - mainActivity
       properties:
+        defaultName:
+          type: string
         localizedName:
           type: string
         languageCode:
