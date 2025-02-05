@@ -8,7 +8,7 @@ extension AppInfo {
         let mainActivity: String
     }
 
-    convenience init(create: Create) throws {
+    convenience init(create: Create) {
         self.init(id: UUID(), packageName: create.packageName, mainActivity: create.mainActivity)
     }
 }
