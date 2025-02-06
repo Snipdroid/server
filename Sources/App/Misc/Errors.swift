@@ -5,6 +5,7 @@ enum InternalError<T>: Error {
     case failedToAcquireID(_ model: T.Type)
     case failedToAcquireEntity(_ entity: T.Type)
     case violationOfUniqueConstraint(_ entity: T.Type)
+    case invalidUrl(_ type: T.Type, _ url: String? = nil)
 }
 
 extension InternalError: AbortError {
@@ -12,7 +13,7 @@ extension InternalError: AbortError {
         switch self {
         case .decodingError, .violationOfUniqueConstraint:
             return .badRequest
-        case .failedToAcquireID, .failedToAcquireEntity:
+        case .failedToAcquireID, .failedToAcquireEntity, .invalidUrl:
             return .internalServerError
         }
     }
@@ -27,6 +28,8 @@ extension InternalError: AbortError {
             return "Failed to acquire entity \(entity)"
         case .violationOfUniqueConstraint(let entity):
             return "Violation of unique constraint for \(entity)"
+        case  .invalidUrl(let type, let url):
+            return "Invalid \(type): \(url ?? "nil")"
         }
     }
 }

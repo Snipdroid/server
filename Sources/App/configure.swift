@@ -4,6 +4,7 @@ import JWT
 import NIOSSL
 import QueuesRedisDriver
 import Vapor
+import SotoS3
 
 // configures your application
 public func configure(_ app: Application) async throws {
@@ -16,6 +17,13 @@ public func configure(_ app: Application) async throws {
     // app.queues.add(DailySummaryJob())
     // app.queues.schedule(DailySummaryJob()).daily()
     // try app.queues.startInProcessJobs(on: .default)
+
+    if let awsEndpoint = Environment.get("AWS_ENDPOINT") {
+        app.aws.client = AWSClient(
+            httpClient: app.http.client.shared
+        )
+        app.aws.s3 = S3(client: app.aws.client, endpoint: awsEndpoint)
+    }
 
     app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
         hostname: Environment.get("DATABASE_HOST") ?? "localhost",

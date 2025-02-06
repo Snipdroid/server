@@ -19,6 +19,10 @@ let package = Package(
         .package(url: "https://github.com/vapor/jwt.git", from: "5.0.0"),
         // 🚦 A queueing backend for Queues that uses Redis.
         .package(url: "https://github.com/vapor/queues-redis-driver.git", from: "1.0.0"),
+        // 🚀 AWS SDK for Swift
+        .package(url: "https://github.com/soto-project/soto.git", from: "7.0.0"),
+        // 🚀 S3 file transfer for Soto
+        // .package(url: "https://github.com/soto-project/soto-s3-file-transfer.git", from: "2.0.0")
     ],
     targets: [
         .executableTarget(
@@ -30,7 +34,8 @@ let package = Package(
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "JWT", package: "jwt"),
-                .product(name: "QueuesRedisDriver", package: "queues-redis-driver")
+                .product(name: "QueuesRedisDriver", package: "queues-redis-driver"),
+                .product(name: "SotoS3", package: "soto")
             ],
             swiftSettings: swiftSettings
         ),
