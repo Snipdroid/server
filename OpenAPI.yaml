@@ -137,9 +137,21 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
+tags:
+  - name: Designer
+    description: Designer authentication and management
+  - name: AppVersion
+    description: App version management
+  - name: AppInfo
+    description: App information management
+  - name: AppIcon
+    description: App icon management
+
 paths:
   /designer/register:
     post:
+      tags:
+        - Designer
       summary: Register a new designer
       requestBody:
         required: true
@@ -157,6 +169,8 @@ paths:
   
   /designer/login:
     get:
+      tags:
+        - Designer
       summary: Login as designer
       security:
         - bearerAuth: []
@@ -170,6 +184,8 @@ paths:
   
   /app-version/create:
     post:
+      tags:
+        - AppVersion
       summary: Create a new app version
       security:
         - bearerAuth: []
@@ -189,6 +205,8 @@ paths:
   
   /app-info/search:
     get:
+      tags:
+        - AppInfo
       summary: Search app info
       parameters:
         - in: query
@@ -235,6 +253,8 @@ paths:
   
   /app-info/create:
     post:
+      tags:
+        - AppInfo
       summary: Create or update app info
       security:
         - bearerAuth: []
@@ -256,6 +276,8 @@ paths:
 
   /app-icon:
     get:
+      tags:
+        - AppIcon
       summary: Get an app icon redirect URL
       parameters:
         - in: query
@@ -276,6 +298,8 @@ paths:
   
   /app-icon/generate-upload-url:
     post:
+      tags:
+        - AppIcon
       summary: Generate a pre-signed URL for uploading an app icon
       requestBody:
         required: true
