@@ -6,7 +6,7 @@ struct DesignerController: RouteCollection {
         let designer = routes.grouped("designer")
 
         designer.post("register", use: register)
-        designer.grouped(Designer.authenticator(), DesignerAuthenticator()).post("login", use: login)
+        designer.grouped(Designer.authenticator(), DesignerAuthenticator()).get("login", use: login)
     }
 
     @Sendable

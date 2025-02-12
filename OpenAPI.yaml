@@ -154,7 +154,7 @@ paths:
                 $ref: '#/components/schemas/Designer'
   
   /designer/login:
-    post:
+    get:
       summary: Login as designer
       security:
         - bearerAuth: []
