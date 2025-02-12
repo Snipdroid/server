@@ -20,7 +20,9 @@ struct AppIconController: RouteCollection {
         let signedURL = try await req.aws.s3.signURL(
             url: iconURL, httpMethod: .GET, expires: .minutes(60))
 
-        return req.redirect(to: signedURL.absoluteString, redirectType: .normal)
+        let redirectResponse = req.redirect(to: signedURL.absoluteString, redirectType: .temporary)
+        redirectResponse.headers.add(name: .cacheControl, value: "public, max-age=3600")
+        return redirectResponse
     }
 
     @Sendable
