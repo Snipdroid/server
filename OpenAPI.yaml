@@ -6,6 +6,8 @@ info:
 servers:
   - url: http://127.0.0.1:8080
     description: Local development server
+  - url: http://apptracker.sg.butanediol.me
+    description: Test server
 
 components:
   schemas:
