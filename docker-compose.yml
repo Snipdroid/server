@@ -26,6 +26,9 @@ x-shared_environment: &shared_environment
   DATABASE_PASSWORD: vapor_password
   REDIS_URL: redis://redis:6379
   JWT_SECRET: secret
+  AWS_ACCESS_KEY_ID: aws_access_key_id
+  AWS_SECRET_ACCESS_KEY: aws_secret_access_key
+  AWS_ENDPOINT: https://22222222222222222222222222222222.r2.cloudflarestorage.com
   
 services:
   app:
