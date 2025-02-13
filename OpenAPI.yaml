@@ -55,7 +55,7 @@ components:
           minLength: 8
           description: Password must be at least 8 characters long
     
-    AppVersion:
+    IconPackVersion:
       type: object
       properties:
         id:
@@ -66,7 +66,7 @@ components:
         token:
           type: string
     
-    AppVersionCreate:
+    IconPackVersionCreate:
       type: object
       required:
         - versionString
@@ -140,8 +140,8 @@ components:
 tags:
   - name: Designer
     description: Designer authentication and management
-  - name: AppVersion
-    description: App version management
+  - name: IconPackVersion
+    description: Icon pack version management
   - name: AppInfo
     description: App information management
   - name: AppIcon
@@ -182,11 +182,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Designer'
   
-  /app-version/create:
+  /icon-pack-version/create:
     post:
       tags:
-        - AppVersion
-      summary: Create a new app version
+        - IconPackVersion
+      summary: Create a new icon pack version
       security:
         - bearerAuth: []
       requestBody:
@@ -194,14 +194,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AppVersionCreate'
+              $ref: '#/components/schemas/IconPackVersionCreate'
       responses:
         '200':
           description: Successfully created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppVersion'
+                $ref: '#/components/schemas/IconPackVersion'
   
   /app-info/search:
     get:
