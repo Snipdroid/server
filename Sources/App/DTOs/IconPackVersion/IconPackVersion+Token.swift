@@ -1,7 +1,7 @@
 import Vapor
 import JWT
 
-extension AppVersion {
+extension IconPackVersion {
     struct Token: JWTPayload {
 
         enum CodingKeys: String, CodingKey {

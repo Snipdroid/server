@@ -52,7 +52,7 @@ public func migrations(_ app: Application) async throws {
     app.migrations.add(CreateDesigner())
     app.migrations.add(CreateAppInfo())
     app.migrations.add(CreateAppLocalizedName())
-    app.migrations.add(CreateAppVersion())
+    app.migrations.add(CreateIconPackVersion())
     app.migrations.add(CreateRequestRecord())
     app.migrations.add(CreateTrigger())
     app.migrations.add(CreateDailySummary())

@@ -14,7 +14,7 @@ final class Designer: Model, @unchecked Sendable {
     var id: UUID?
 
     @Children(for: \.$designer)
-    var appVersions: [AppVersion]
+    var iconPackVersions: [IconPackVersion]
 
     @Field(key: "name")
     var name: String

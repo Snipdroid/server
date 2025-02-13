@@ -1,6 +1,6 @@
 import Vapor
 
-extension AppVersion {
+extension IconPackVersion {
     struct DTO: Content {
         var id: UUID?
         var designerId: UUID

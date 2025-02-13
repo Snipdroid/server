@@ -18,14 +18,14 @@ final class RequestRecord: Model, @unchecked Sendable {
     var createdAt: Date?
 
     @OptionalParent(key: "app_version_id")
-    var appVersion: AppVersion?
+    var iconPackVersion: IconPackVersion?
 
     init() { }
 
-    init(id: UUID? = nil, appInfoId: UUID, appVersionId: UUID?) {
+    init(id: UUID? = nil, appInfoId: UUID, iconPackVersionId: UUID?) {
         self.id = id
         self.$appInfo.id = appInfoId
-        self.$appVersion.id = appVersionId
+        self.$iconPackVersion.id = iconPackVersionId
     }
 }
 
@@ -34,7 +34,7 @@ struct CreateRequestRecord: AsyncMigration {
         try await database.schema(RequestRecord.schema)
             .id()
             .field("app_info_id", .uuid, .required, .references(AppInfo.schema, "id"))
-            .field("app_version_id", .uuid, .references(AppVersion.schema, "id"))
+            .field("app_version_id", .uuid, .references(IconPackVersion.schema, "id"))
             .field("created_at", .datetime)
             .create()
     }

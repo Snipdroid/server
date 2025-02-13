@@ -5,8 +5,8 @@ import struct Foundation.Date
 /// Property wrappers interact poorly with `Sendable` checking, causing a warning for the `@ID` property
 /// It is recommended you write your model with sendability checking on and then suppress the warning
 /// afterwards with `@unchecked Sendable`.
-final class AppVersion: Model, @unchecked Sendable {
-    static let schema = "app_versions"
+final class IconPackVersion: Model, @unchecked Sendable {
+    static let schema = "icon_pack_versions"
     
     @ID(key: .id)
     var id: UUID?
@@ -14,7 +14,7 @@ final class AppVersion: Model, @unchecked Sendable {
     @Parent(key: "designer_id")
     var designer: Designer
 
-    @Children(for: \.$appVersion)
+    @Children(for: \.$iconPackVersion)
     var requestRecords: [RequestRecord]
 
     @Field(key: "version_string")
@@ -33,9 +33,9 @@ final class AppVersion: Model, @unchecked Sendable {
 }
 
 
-struct CreateAppVersion: AsyncMigration {
+struct CreateIconPackVersion: AsyncMigration {
     func prepare(on database: Database) async throws {
-        try await database.schema(AppVersion.schema)
+        try await database.schema(IconPackVersion.schema)
             .id()
             .field("designer_id", .uuid, .references(Designer.schema, "id"))
             .field("version_string", .string, .required)
@@ -45,6 +45,6 @@ struct CreateAppVersion: AsyncMigration {
     }
 
     func revert(on database: Database) async throws {
-        try await database.schema(AppVersion.schema).delete()
+        try await database.schema(IconPackVersion.schema).delete()
     }
 }

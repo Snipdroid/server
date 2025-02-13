@@ -26,9 +26,9 @@ struct DailySummaryJob: AsyncScheduledJob, AsyncJob {
             let startOfYesterday = calendar.startOfDay(for: yesterday)
 
             let count = try await RequestRecord.query(on: context.application.db)
-                .join(parent: \.$appVersion)
-                .join(from: AppVersion.self, parent: \.$designer)
-                .filter(AppVersion.self, \.$designer.$id, .equal, id)
+                .join(parent: \.$iconPackVersion)
+                .join(from: IconPackVersion.self, parent: \.$designer)
+                .filter(IconPackVersion.self, \.$designer.$id, .equal, id)
                 .filter(\.$createdAt, .greaterThanOrEqual, startOfYesterday)
                 .filter(\.$createdAt, .lessThan, startOfToday)
                 .count()

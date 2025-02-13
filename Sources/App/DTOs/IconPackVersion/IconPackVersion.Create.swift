@@ -1,6 +1,6 @@
 import Vapor 
 
-extension AppVersion {
+extension IconPackVersion {
     struct Create: Content {
         let expireAt: Date
         let versionString: String

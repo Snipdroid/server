@@ -7,7 +7,7 @@ struct AppInfoController: RouteCollection {
         let appInfo = routes.grouped("app-info")
 
         appInfo.get("search", use: search)
-        appInfo.grouped(AppVersionAuthenticator()).post("create", use: create)
+        appInfo.grouped(IconPackVersionAuthenticator()).post("create", use: create)
     }
 
     @Sendable
@@ -51,7 +51,7 @@ struct AppInfoController: RouteCollection {
 
     @Sendable
     func create(req: Request) async throws -> [AppInfo] {
-        let appVersionId = try? req.auth.require(AppVersion.self).requireID()
+        let iconPackVersionId = try? req.auth.require(IconPackVersion.self).requireID()
         let creates = try req.content.decode([AppInfo.Create].self)
 
         // 1. Batch query existing AppInfo
@@ -158,7 +158,7 @@ struct AppInfoController: RouteCollection {
                 req.logger.report(error: InternalError.failedToAcquireID(AppInfo.self))
                 return nil
             }
-            return RequestRecord(appInfoId: appInfoId, appVersionId: appVersionId)
+            return RequestRecord(appInfoId: appInfoId, iconPackVersionId: iconPackVersionId)
         }
         try await requestRecords.create(on: req.db)
 
@@ -167,7 +167,7 @@ struct AppInfoController: RouteCollection {
 
     @Sendable
     func createSingle(req: Request) async throws -> AppInfo {
-        let appVersionId = try? req.auth.require(AppVersion.self).requireID()
+        let iconPackVersionId = try? req.auth.require(IconPackVersion.self).requireID()
         guard let create = try req.content.decode([AppInfo.Create].self).first else {
             throw InternalError.decodingError([AppInfo.Create].self)
         }
@@ -213,7 +213,7 @@ struct AppInfoController: RouteCollection {
         }
 
         // 3. Record the request
-        let newRequestRecord = RequestRecord(appInfoId: appInfoId, appVersionId: appVersionId)
+        let newRequestRecord = RequestRecord(appInfoId: appInfoId, iconPackVersionId: iconPackVersionId)
         try await newRequestRecord.save(on: req.db)
 
         return appInfo
