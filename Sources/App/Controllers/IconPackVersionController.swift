@@ -6,7 +6,7 @@ struct IconPackVersionController: RouteCollection {
         let designer = routes.grouped("icon-pack-version")
 
         designer.grouped(Designer.authenticator(), DesignerAuthenticator()).post("create", use: create)
-        designer.grouped(IconPackVersionAuthenticator()).get("requests", use: requests)
+        designer.grouped(Designer.authenticator(), DesignerAuthenticator()).get(":iconPackVersionId", "requests", use: requests)
     }
 
     @Sendable
@@ -48,12 +48,23 @@ struct IconPackVersionController: RouteCollection {
         return try await iconPackVersion.toDTO(token: req.jwt.sign(payload))
     }
 
+
+    // GET /icon-pack-version/:iconPackVersionId/requests
     @Sendable
     func requests(req: Request) async throws -> Page<RequestRecord> {
-        let iconPackVersion = try req.auth.require(IconPackVersion.self)
+        let designer = try req.auth.require(Designer.self)
+        let designerId = try designer.requireID()
+        
+        let iconPackVersionId = try req.parameters.require("iconPackVersionId", as: UUID.self)
 
-        guard let iconPackVersionId = try? iconPackVersion.requireID() else {
-            throw InternalError.failedToAcquireID(IconPackVersion.self)
+        guard let iconPackVersion = try await IconPackVersion.query(on: req.db)
+            .filter(\.$id == iconPackVersionId)
+            .first() else {
+            throw Abort(.notFound)
+        }
+
+        guard iconPackVersion.$designer.id == designerId else {
+            throw Abort(.forbidden)
         }
 
         return try await RequestRecord.query(on: req.db)
@@ -61,4 +72,5 @@ struct IconPackVersionController: RouteCollection {
             .with(\.$appInfo)
             .paginate(for: req)
     }
+
 }

@@ -146,6 +146,8 @@ tags:
     description: App information management
   - name: AppIcon
     description: App icon management
+  - name: RequestRecord
+    description: Request record management
 
 paths:
   /designer/register:
@@ -203,54 +205,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/IconPackVersion'
   
-  /icon-pack-version/requests:
-    get:
-      tags:
-        - IconPackVersion
-      summary: Get requests for an icon pack version
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-        - in: query
-          name: per
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: List of requests
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          format: uuid
-                        appInfo:
-                          $ref: '#/components/schemas/AppInfo'
-                        createdAt:
-                          type: number
-                          format: double
-                          description: Milliseconds since 1970 with microsecond precision
-                  metadata:
-                    type: object
-                    properties:
-                      page:
-                        type: integer
-                      per:
-                        type: integer
-                      total:
-                        type: integer
-
   /app-info/search:
     get:
       tags:
@@ -365,6 +319,106 @@ paths:
                 format: uri
         '404':
           description: App not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /icon-pack-version/{iconPackVersionId}/requests:
+    get:
+      tags:
+        - IconPackVersion
+      summary: Get requests for a specific icon pack version
+      description: Returns requests for an icon pack version. Requires designer authentication and ownership of the icon pack version.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: iconPackVersionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the icon pack version to get requests for
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: per
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        appInfo:
+                          $ref: '#/components/schemas/AppInfo'
+                        createdAt:
+                          type: number
+                          format: double
+                          description: Milliseconds since 1970 with microsecond precision
+                  metadata:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      per:
+                        type: integer
+                      total:
+                        type: integer
+        '403':
+          description: Designer does not own this icon pack version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Icon pack version not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /request-record/{requestRecordId}:
+    delete:
+      tags:
+        - RequestRecord
+      summary: Delete a request record
+      description: Deletes a request record. Requires designer authentication and ownership of the associated icon pack version.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: requestRecordId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the request record to delete
+      responses:
+        '200':
+          description: Request record successfully deleted
+        '403':
+          description: Designer does not own the associated icon pack version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Request record not found
           content:
             application/json:
               schema:

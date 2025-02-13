@@ -17,6 +17,9 @@ final class RequestRecord: Model, @unchecked Sendable {
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
+    @Timestamp(key: "deleted_at", on: .delete)
+    var deletedAt: Date?
+
     @OptionalParent(key: "icon_pack_version_id")
     var iconPackVersion: IconPackVersion?
 
@@ -36,6 +39,7 @@ struct CreateRequestRecord: AsyncMigration {
             .field("app_info_id", .uuid, .required, .references(AppInfo.schema, "id"))
             .field("icon_pack_version_id", .uuid, .references(IconPackVersion.schema, "id"))
             .field("created_at", .datetime)
+            .field("deleted_at", .datetime)
             .create()
     }
 
