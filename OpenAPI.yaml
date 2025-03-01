@@ -301,16 +301,17 @@ paths:
                 $ref: '#/components/schemas/Error'
   
   /app-icon/generate-upload-url:
-    post:
+    get:
       tags:
         - AppIcon
       summary: Generate a pre-signed URL for uploading an app icon
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/IconUploadRequest'
+      parameters:
+        - in: query
+          name: packageName
+          required: true
+          schema:
+            type: string
+          description: Package name of the app to get icon for
       responses:
         '200':
           description: Successfully generated upload URL

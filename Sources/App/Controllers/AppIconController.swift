@@ -8,7 +8,7 @@ struct AppIconController: RouteCollection {
         let appIcon = routes.grouped("app-icon")
 
         appIcon.get(use: redirect)
-        appIcon.post("generate-upload-url", use: generateUploadURL)
+        appIcon.get("generate-upload-url", use: generateUploadURL)
     }
 
     @Sendable
@@ -32,7 +32,7 @@ struct AppIconController: RouteCollection {
             let packageName: String
         }
 
-        let uploadRequest = try req.content.decode(UploadRequest.self)
+        let uploadRequest = try req.query.decode(UploadRequest.self)
 
         // 1. Check if the app exists
         guard
