@@ -274,7 +274,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AppInfo'
+                type: array
+                items:
+                  $ref: '#/components/schemas/AppInfo'
 
   /app-icon:
     get:
