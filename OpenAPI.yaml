@@ -101,6 +101,14 @@ components:
                 type: string
               isPrimary:
                 type: boolean
+              createdAt:
+                type: number
+                format: double
+                description: Milliseconds since 1970 with microsecond precision
+              updatedAt:
+                type: number
+                format: double
+                description: Milliseconds since 1970 with microsecond precision
     
     AppInfoCreate:
       type: object

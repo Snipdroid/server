@@ -26,6 +26,9 @@ final class AppLocalizedName: Model, @unchecked Sendable {
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
+    @Timestamp(key: "updated_at", on: .update)
+    var updatedAt: Date?
+
     init() { }
 
     init(id: UUID? = nil, appInfoId: UUID, languageCode: String, name: String, isPrimary: Bool) {
@@ -46,6 +49,7 @@ struct CreateAppLocalizedName: AsyncMigration {
             .field("name", .string, .required)
             .field("is_primary", .bool, .required)
             .field("created_at", .datetime)
+            .field("updated_at", .datetime)
             .create()
     }
 
