@@ -13,3 +13,10 @@ extension AppInfo {
         self.init(id: UUID(), defaultName: create.defaultName, packageName: create.packageName, mainActivity: create.mainActivity)
     }
 }
+
+extension AppInfo.Create: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(packageName)
+        hasher.combine(mainActivity)
+    }
+}

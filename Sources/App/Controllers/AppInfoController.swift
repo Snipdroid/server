@@ -52,7 +52,7 @@ struct AppInfoController: RouteCollection {
     @Sendable
     func create(req: Request) async throws -> [AppInfo] {
         let iconPackVersionId = try? req.auth.require(IconPackVersion.self).requireID()
-        let creates = try req.content.decode([AppInfo.Create].self)
+        let creates = try req.content.decode(Set<AppInfo.Create>.self)
 
         // 1. Batch query existing AppInfo
         let existingAppInfos = try await AppInfo.query(on: req.db)
