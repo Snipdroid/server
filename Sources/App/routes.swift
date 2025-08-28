@@ -1,7 +1,16 @@
 import Fluent
 import Vapor
+import VaporToOpenAPI
 
 func routes(_ app: Application) throws {
+    app.get("swagger") { req in 
+        req.application.routes.openAPI(
+            info: InfoObject(
+                title: "AppTracker", version: "3.0.0"
+            )
+        )
+    }.excludeFromOpenAPI()
+
     try app.register(collection: DesignerController())
     try app.register(collection: AppInfoController())
     try app.register(collection: IconPackVersionController())

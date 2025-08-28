@@ -2,13 +2,35 @@ import Fluent
 import PostgresKit
 import SotoS3
 import Vapor
+import VaporToOpenAPI
 
 struct AppIconController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let appIcon = routes.grouped("app-icon")
 
-        appIcon.get(use: redirect)
-        appIcon.get("generate-upload-url", use: generateUploadURL)
+        appIcon
+            .get(use: redirect)
+            .openAPI (
+                summary: "Get app icon",
+            )
+            .response(
+                statusCode: 307,
+                headers: ["Location": .init(schemaObject: .uri)],
+                description: "Redirect",
+            )
+
+        appIcon
+            .get("generate-upload-url", use: generateUploadURL)
+            .openAPI (
+                summary: "Generate upload URL",
+                query: .type(UploadRequest.self),
+                response: .type(String.self)
+            )
+            .response(
+                statusCode: 200,
+                description: "Upload URL",
+            )
+
     }
 
     @Sendable
@@ -25,12 +47,12 @@ struct AppIconController: RouteCollection {
         return redirectResponse
     }
 
+    fileprivate struct UploadRequest: Content {
+        let packageName: String
+    }
+
     @Sendable
     func generateUploadURL(req: Request) async throws -> String {
-
-        struct UploadRequest: Content {
-            let packageName: String
-        }
 
         let uploadRequest = try req.query.decode(UploadRequest.self)
 

@@ -19,6 +19,8 @@ let package = Package(
         .package(url: "https://github.com/vapor/jwt.git", from: "5.0.0"),
         // 🚦 A queueing backend for Queues that uses Redis.
         .package(url: "https://github.com/vapor/queues-redis-driver.git", from: "1.0.0"),
+        // 📄 OpenAPI doc generator
+        .package(url: "https://github.com/dankinsoid/VaporToOpenAPI", from: "4.0.0"),
         // 🚀 AWS SDK for Swift
         .package(url: "https://github.com/soto-project/soto.git", from: "7.0.0"),
         // 🚀 S3 file transfer for Soto
@@ -35,7 +37,8 @@ let package = Package(
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "JWT", package: "jwt"),
                 .product(name: "QueuesRedisDriver", package: "queues-redis-driver"),
-                .product(name: "SotoS3", package: "soto")
+                .product(name: "SotoS3", package: "soto"),
+                .product(name: "VaporToOpenAPI", package: "VaporToOpenAPI"),
             ],
             swiftSettings: swiftSettings
         ),

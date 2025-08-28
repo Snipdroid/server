@@ -1,12 +1,27 @@
 import Fluent
 import Vapor
+import VaporToOpenAPI
 
 struct DesignerController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let designer = routes.grouped("designer")
 
-        designer.post("register", use: register)
-        designer.grouped(Designer.authenticator(), DesignerAuthenticator()).get("login", use: login)
+        designer
+            .post("register", use: register)
+            .openAPI(
+                summary: "Register",
+                description: "Register a new designer",
+                body: .type(Designer.Register.self),
+                response: .type(Designer.DTO.self)
+            )
+        designer
+            .grouped(Designer.authenticator(), DesignerAuthenticator())
+            .get("login", use: login)
+            .openAPI(
+                summary: "Login",
+                description: "Login as a designer",
+                response: .type(Designer.DTO.self)
+            )
     }
 
     @Sendable
