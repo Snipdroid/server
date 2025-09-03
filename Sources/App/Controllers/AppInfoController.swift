@@ -1,13 +1,34 @@
 import Fluent
 import PostgresKit
 import Vapor
+import VaporToOpenAPI
 
 struct AppInfoController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let appInfo = routes.grouped("app-info")
 
-        appInfo.get("search", use: search)
-        appInfo.grouped(IconPackVersionAuthenticator()).post("create", use: create)
+        appInfo
+            .get("search", use: search)
+            .openAPI(
+                summary: "Search for apps",
+                description: "Search for apps by name, package name, or main activity. The search by name uses a similarity algorithm to find close matches.",
+                query: .type(AppInfo.Query.self),
+                response: .type(Page<AppInfo>.self)
+            )
+
+        appInfo.grouped(IconPackVersionAuthenticator())
+            .post("create", use: create)
+            .openAPI(
+                summary: "Create or update app information",
+                description: """
+                Creates or updates app information.
+                If an app with the same package name and main activity already exists, it will be updated. Otherwise, a new app will be created.
+                Localized names are also created or updated.
+                A request record is created for each app to associate it with the authenticated icon pack.
+                """,
+                body: .type(Set<AppInfo.Create>.self),
+                response: .type([AppInfo].self)
+            )
     }
 
     @Sendable
@@ -213,7 +234,8 @@ struct AppInfoController: RouteCollection {
         }
 
         // 3. Record the request
-        let newRequestRecord = RequestRecord(appInfoId: appInfoId, iconPackVersionId: iconPackVersionId)
+        let newRequestRecord = RequestRecord(
+            appInfoId: appInfoId, iconPackVersionId: iconPackVersionId)
         try await newRequestRecord.save(on: req.db)
 
         return appInfo

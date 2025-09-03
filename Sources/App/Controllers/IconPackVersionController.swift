@@ -1,12 +1,28 @@
 import Fluent
 import Vapor
+import VaporToOpenAPI
 
 struct IconPackVersionController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let designer = routes.grouped("icon-pack-version")
 
-        designer.grouped(Designer.authenticator(), DesignerAuthenticator()).post("create", use: create)
-        designer.grouped(Designer.authenticator(), DesignerAuthenticator()).get(":iconPackVersionId", "requests", use: requests)
+        designer
+            .grouped(Designer.authenticator(), DesignerAuthenticator())
+            .post("create", use: create)
+            .openAPI(
+                summary: "Create icon pack version",
+                description: "Create a new icon pack version",
+                body: .type(IconPackVersion.Create.self),
+                response: .type(IconPackVersion.DTO.self)
+            )
+        designer
+            .grouped(Designer.authenticator(), DesignerAuthenticator())
+            .get(":iconPackVersionId", "requests", use: requests)
+            .openAPI(
+                summary: "Get requests",
+                description: "Get requests for an icon pack version",
+                response: .type(Page<RequestRecord>.self)
+            )
     }
 
     @Sendable

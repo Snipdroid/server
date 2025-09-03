@@ -1,11 +1,19 @@
 import Vapor
+import VaporToOpenAPI
 import Fluent
 
 struct RequestRecordController: RouteCollection {
     func boot(routes: any Vapor.RoutesBuilder) throws {
         let requestRecord = routes.grouped("request-record")
 
-        requestRecord.grouped(Designer.authenticator(), DesignerAuthenticator()).delete(":requestRecordId", use: deleteRequest)
+        requestRecord
+            .grouped(Designer.authenticator(), DesignerAuthenticator())
+            .delete(":requestRecordId", use: deleteRequest)
+            .openAPI(
+                summary: "Delete request",
+                description: "Delete a request record",
+                response: .type(HTTPStatus.self)
+            )
     }
 
     // DELETE /request-record/:requestRecordId
