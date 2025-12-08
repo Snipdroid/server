@@ -7,7 +7,7 @@ struct IconPackVersionController: RouteCollection {
         let designer = routes.grouped("icon-pack-version")
 
         designer
-            .grouped(Designer.authenticator(), DesignerAuthenticator())
+            .grouped(OIDCAuthenticator())
             .post("create", use: create)
             .openAPI(
                 summary: "Create icon pack version",
@@ -16,7 +16,7 @@ struct IconPackVersionController: RouteCollection {
                 response: .type(IconPackVersion.DTO.self)
             )
         designer
-            .grouped(Designer.authenticator(), DesignerAuthenticator())
+            .grouped(OIDCAuthenticator())
             .get(":iconPackVersionId", "requests", use: requests)
             .openAPI(
                 summary: "Get requests",

@@ -7,7 +7,7 @@ struct RequestRecordController: RouteCollection {
         let requestRecord = routes.grouped("request-record")
 
         requestRecord
-            .grouped(Designer.authenticator(), DesignerAuthenticator())
+            .grouped(OIDCAuthenticator())
             .delete(":requestRecordId", use: deleteRequest)
             .openAPI(
                 summary: "Delete request",

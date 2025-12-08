@@ -11,7 +11,14 @@ public func configure(_ app: Application) async throws {
     // uncomment to serve files from /Public folder
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
-    await app.jwt.keys.add(hmac: HMACKey(from: Environment.get("JWT_SECRET") ?? "jwt"), digestAlgorithm: .sha256)
+    // Configure OIDC authentication (uses auto-discovery)
+    guard let oidcIssuer = Environment.get("OIDC_ISSUER") else {
+        fatalError("OIDC_ISSUER environment variable is required")
+    }
+    guard let oidcAudience = Environment.get("OIDC_AUDIENCE") else {
+        fatalError("OIDC_AUDIENCE environment variable is required")
+    }
+    try await app.configureOIDC(issuer: oidcIssuer, audience: oidcAudience)
 
     // try app.queues.use(.redis(url: Environment.get("REDIS_URL") ?? "redis://localhost:6379"))
     // app.queues.add(DailySummaryJob())

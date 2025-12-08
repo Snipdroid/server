@@ -5,22 +5,38 @@
 To run your own instance of AppTracker, you'll need:
 - Docker and Docker Compose installed
 - AWS S3-compatible storage (like Cloudflare R2)
+- An OIDC provider (like Keycloak, Auth0, Okta, or any OIDC-compliant identity provider)
 
 ### Environment Variables
 
 Set the following environment variables or modify them in `docker-compose.yml`:
 
 ```env
-LOG_LEVEL=debug
+# Database
 DATABASE_HOST=db
 DATABASE_NAME=vapor_database
 DATABASE_USERNAME=vapor_username
 DATABASE_PASSWORD=vapor_password
-JWT_SECRET=your_secret_here
+
+# OIDC Authentication (required)
+OIDC_ISSUER=https://your-oidc-provider.example.com
+OIDC_AUDIENCE=your-client-id
+
+# AWS S3-compatible storage (optional)
 AWS_ACCESS_KEY_ID=your_access_key
 AWS_SECRET_ACCESS_KEY=your_secret_key
 AWS_ENDPOINT=your_s3_endpoint
+
+# Logging
+LOG_LEVEL=debug
 ```
+
+#### OIDC Configuration
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OIDC_ISSUER` | Yes | Your OIDC provider's issuer URL. The server uses auto-discovery to fetch the JWKS URL from `{OIDC_ISSUER}/.well-known/openid-configuration`. |
+| `OIDC_AUDIENCE` | Yes | The client ID registered with your OIDC provider for this API. Tokens must contain this value in the `aud` claim. |
 
 ### Running the Service
 

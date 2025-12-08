@@ -7,7 +7,7 @@ import struct Foundation.UUID
 /// Property wrappers interact poorly with `Sendable` checking, causing a warning for the `@ID` property
 /// It is recommended you write your model with sendability checking on and then suppress the warning
 /// afterwards with `@unchecked Sendable`.
-final class Designer: Model, @unchecked Sendable {
+final class Designer: Model, Authenticatable, @unchecked Sendable {
     static let schema = "designers"
 
     @ID(key: .id)
@@ -16,25 +16,32 @@ final class Designer: Model, @unchecked Sendable {
     @Children(for: \.$designer)
     var iconPackVersions: [IconPackVersion]
 
-    @Field(key: "name")
-    var name: String
+    @Field(key: "oidc_subject")
+    var oidcSubject: String
 
-    @Field(key: "email")
-    var email: String
+    @Field(key: "oidc_issuer")
+    var oidcIssuer: String
 
-    @Field(key: "passwordHash")
-    var passwordHash: String
+    @OptionalField(key: "email")
+    var email: String?
+
+    @OptionalField(key: "name")
+    var name: String?
 
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
+    @Timestamp(key: "updated_at", on: .update)
+    var updatedAt: Date?
+
     init() {}
 
-    init(id: UUID? = nil, name: String, email: String, passwordHash: String) {
+    init(id: UUID? = nil, oidcSubject: String, oidcIssuer: String, email: String? = nil, name: String? = nil) {
         self.id = id
-        self.name = name
+        self.oidcSubject = oidcSubject
+        self.oidcIssuer = oidcIssuer
         self.email = email
-        self.passwordHash = passwordHash
+        self.name = name
     }
 }
 
@@ -42,11 +49,13 @@ struct CreateDesigner: AsyncMigration {
     func prepare(on database: Database) async throws {
         try await database.schema(Designer.schema)
             .id()
-            .field("name", .string, .required)
-            .field("email", .string, .required)
-            .field("passwordHash", .string, .required)
+            .field("oidc_subject", .string, .required)
+            .field("oidc_issuer", .string, .required)
+            .field("email", .string)
+            .field("name", .string)
             .field("created_at", .datetime)
-            .unique(on: "email")
+            .field("updated_at", .datetime)
+            .unique(on: "oidc_subject", "oidc_issuer")
             .create()
     }
 
