@@ -1,10 +1,10 @@
-// swift-tools-version:6.1
+// swift-tools-version:6.2
 import PackageDescription
 
 let package = Package(
     name: "AppTracker",
     platforms: [
-       .macOS(.v13)
+        .macOS(.v13)
     ],
     dependencies: [
         // 💧 A server-side Swift web framework.
@@ -49,12 +49,14 @@ let package = Package(
                 .product(name: "VaporTesting", package: "vapor"),
             ],
             swiftSettings: swiftSettings
-        )
+        ),
     ],
     swiftLanguageModes: [.v5]
 )
 
-var swiftSettings: [SwiftSetting] { [
-    .enableUpcomingFeature("DisableOutwardActorInference"),
-    .enableExperimentalFeature("StrictConcurrency"),
-] }
+var swiftSettings: [SwiftSetting] {
+    [
+        .enableUpcomingFeature("DisableOutwardActorInference"),
+        .enableExperimentalFeature("StrictConcurrency"),
+    ]
+}
