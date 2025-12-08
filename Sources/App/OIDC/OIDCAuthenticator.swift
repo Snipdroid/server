@@ -34,27 +34,13 @@ struct OIDCAuthenticator: AsyncBearerAuthenticator {
             .filter(\.$oidcIssuer == issuer)
             .first()
         {
-            // Update profile info from token if available
-            var needsUpdate = false
-            if let email = payload.email, existingDesigner.email != email {
-                existingDesigner.email = email
-                needsUpdate = true
-            }
-            if let name = payload.name ?? payload.preferredUsername, existingDesigner.name != name {
-                existingDesigner.name = name
-                needsUpdate = true
-            }
-            if needsUpdate {
-                try await existingDesigner.save(on: request.db)
-            }
             designer = existingDesigner
         } else {
             // Create new Designer (just-in-time provisioning)
+            // Profile data (email, name) will be populated via /designer/me/sync
             let newDesigner = Designer(
                 oidcSubject: subject,
-                oidcIssuer: issuer,
-                email: payload.email,
-                name: payload.name ?? payload.preferredUsername
+                oidcIssuer: issuer
             )
             try await newDesigner.save(on: request.db)
             designer = newDesigner

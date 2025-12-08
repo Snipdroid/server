@@ -4,16 +4,19 @@ import Vapor
 struct OIDCDiscoveryDocument: Content {
     let issuer: String
     let jwksUri: String
+    let userinfoEndpoint: String
 
     enum CodingKeys: String, CodingKey {
         case issuer
         case jwksUri = "jwks_uri"
+        case userinfoEndpoint = "userinfo_endpoint"
     }
 }
 
 struct OIDCConfig: Sendable {
     let issuer: String
     let jwksURL: String
+    let userinfoURL: String
     let audience: String
 }
 
@@ -57,6 +60,11 @@ extension Application {
         try await self.jwt.keys.add(jwks: jwks)
 
         // Store config
-        self.oidc = OIDCConfig(issuer: issuer, jwksURL: discovery.jwksUri, audience: audience)
+        self.oidc = OIDCConfig(
+            issuer: issuer,
+            jwksURL: discovery.jwksUri,
+            userinfoURL: discovery.userinfoEndpoint,
+            audience: audience
+        )
     }
 }

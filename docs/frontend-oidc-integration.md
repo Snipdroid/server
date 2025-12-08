@@ -132,7 +132,46 @@ async function callApi(endpoint: string, options: RequestInit = {}) {
 }
 ```
 
-### 5. Example API Calls
+### 5. Sync User Profile
+
+After login, call the sync endpoint to fetch the user's profile (name, email) from the OIDC provider:
+
+```typescript
+async function handleCallback() {
+  const user = await userManager.signinRedirectCallback();
+
+  // Sync profile data from OIDC provider to our backend
+  await callApi('/designer/me/sync', { method: 'POST' });
+
+  return user;
+}
+```
+
+This fetches the user's `name` and `email` from the OIDC provider's userinfo endpoint and stores it in the database. You only need to call this once after login (or when you want to refresh the profile).
+
+### 6. Get User Information
+
+There are two ways to get user information:
+
+**Option A: From the ID Token (no API call needed)**
+
+```typescript
+const user = await userManager.getUser();
+console.log(user.profile.name);   // From ID token
+console.log(user.profile.email);  // From ID token
+```
+
+**Option B: From the API**
+
+```typescript
+const me = await callApi('/designer/me');
+console.log(me.name);   // From database (synced via /designer/me/sync)
+console.log(me.email);  // From database
+```
+
+Use Option A for quick UI display. Use Option B when you need the server's view of the user (e.g., to check `createdAt` or other server-side data).
+
+### 7. Example API Calls
 
 ```typescript
 // Get current user profile
@@ -187,6 +226,7 @@ async function logout() {
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/designer/me` | Get current user profile |
+| POST | `/designer/me/sync` | Sync profile from OIDC provider |
 | POST | `/icon-pack-version/create` | Create a new icon pack version |
 | GET | `/icon-pack-version/:id/requests` | Get requests for an icon pack |
 | DELETE | `/request-record/:id` | Delete a request record |
