@@ -11,8 +11,9 @@ struct AppInfoController: RouteCollection {
             .get("search", use: search)
             .openAPI(
                 summary: "Search for apps",
-                description: "Search for apps by name, package name, or main activity. The search by name uses a similarity algorithm to find close matches.",
-                query: .type(AppInfo.Query.self),
+                description:
+                    "Search for apps using a simple query or advanced filters. The `query` parameter searches across name, package name, and main activity. Advanced filters (byName, byPackageName, byMainActivity) can be combined with query using AND logic. Use `sortBy` to control result ordering.",
+                query: .type(AppInfoQueryRequest.self),
                 response: .type(Page<AppInfo>.self)
             )
 
@@ -21,24 +22,64 @@ struct AppInfoController: RouteCollection {
             .openAPI(
                 summary: "Create or update app information",
                 description: """
-                Creates or updates app information.
-                If an app with the same package name and main activity already exists, it will be updated. Otherwise, a new app will be created.
-                Localized names are also created or updated.
-                A request record is created for each app to associate it with the authenticated icon pack.
-                """,
-                body: .type(Set<AppInfo.Create>.self),
+                    Creates or updates app information.
+                    If an app with the same package name and main activity already exists, it will be updated. Otherwise, a new app will be created.
+                    Localized names are also created or updated.
+                    A request record is created for each app to associate it with the authenticated icon pack.
+                    """,
+                body: .type(Set<AppInfoCreateSingleRequest>.self),
                 response: .type([AppInfo].self)
             )
     }
 
     @Sendable
     func search(req: Request) async throws -> Page<AppInfo> {
-        let query = try req.query.decode(AppInfo.Query.self)
+        let query = try req.query.decode(AppInfoQueryRequest.self)
+        let sortBy = query.sortBy ?? .count
 
         var queryBuilder: QueryBuilder<AppInfo> = AppInfo.query(on: req.db)
             .with(\.$localizedNames)
 
-        if let byName = query.byName {
+        // Track search term for relevance sorting
+        var searchTerm: String? = nil
+
+        // Step 1: Handle unified `query` parameter (searches all fields)
+        if let simpleQuery = query.query, !simpleQuery.isEmpty {
+            searchTerm = simpleQuery
+
+            // Search across localized names
+            let nameMatchIds = try await AppLocalizedName.query(on: req.db)
+                .filter(\.$name, .custom("ILIKE"), "%\(simpleQuery)%")
+                .all()
+                .map(\.$appInfo.id)
+
+            // Search across package names
+            let packageMatchIds = try await AppInfo.query(on: req.db)
+                .filter(\.$packageName, .custom("ILIKE"), "%\(simpleQuery)%")
+                .all()
+                .compactMap(\.id)
+
+            // Search across main activities
+            let activityMatchIds = try await AppInfo.query(on: req.db)
+                .filter(\.$mainActivity, .custom("ILIKE"), "%\(simpleQuery)%")
+                .all()
+                .compactMap(\.id)
+
+            // Union all matching IDs (OR logic across fields)
+            let allMatchingIds = Set(nameMatchIds + packageMatchIds + activityMatchIds)
+
+            if allMatchingIds.isEmpty {
+                // No matches found, return empty page
+                return Page(items: [], metadata: .init(page: 1, per: 20, total: 0))
+            }
+
+            queryBuilder = queryBuilder.filter(\.$id ~~ Array(allMatchingIds))
+        }
+
+        // Step 2: Apply advanced filters (AND logic on top of query results)
+        if let byName = query.byName, !byName.isEmpty {
+            searchTerm = searchTerm ?? byName
+
             let appInfoIds = try await AppLocalizedName.query(on: req.db)
                 .filter(\.$name, .custom("ILIKE"), "%\(byName)%")
                 .sort(
@@ -54,26 +95,47 @@ struct AppInfoController: RouteCollection {
             queryBuilder = queryBuilder.filter(\.$id ~~ appInfoIds)
         }
 
-        if let byPackageName = query.byPackageName {
-            queryBuilder = queryBuilder.filter(\.$packageName == byPackageName)
-
+        if let byPackageName = query.byPackageName, !byPackageName.isEmpty {
+            searchTerm = searchTerm ?? byPackageName
+            queryBuilder = queryBuilder.filter(
+                \.$packageName, .custom("ILIKE"), "%\(byPackageName)%")
         }
 
-        if let byMainActivity = query.byMainActivity {
-            queryBuilder = queryBuilder.filter(\.$mainActivity == byMainActivity)
-
+        if let byMainActivity = query.byMainActivity, !byMainActivity.isEmpty {
+            searchTerm = searchTerm ?? byMainActivity
+            queryBuilder = queryBuilder.filter(
+                \.$mainActivity, .custom("ILIKE"), "%\(byMainActivity)%")
         }
 
-        return
-            try await queryBuilder
-            .sort(\.$count, .descending)
-            .paginate(for: req)
+        // Step 3: Apply sorting
+        switch sortBy {
+        case .relevance:
+            if let term = searchTerm {
+                // Sort by similarity to search term, then by count
+                queryBuilder =
+                    queryBuilder
+                    .sort(
+                        .sql(
+                            embed:
+                                "GREATEST(similarity(package_name, \(bind: term)), similarity(main_activity, \(bind: term))) DESC"
+                        )
+                    )
+                    .sort(\.$count, .descending)
+            } else {
+                // No search term, fall back to count
+                queryBuilder = queryBuilder.sort(\.$count, .descending)
+            }
+        case .count:
+            queryBuilder = queryBuilder.sort(\.$count, .descending)
+        }
+
+        return try await queryBuilder.paginate(for: req)
     }
 
     @Sendable
     func create(req: Request) async throws -> [AppInfo] {
         let iconPackVersionId = try? req.auth.require(IconPackVersion.self).requireID()
-        let creates = try req.content.decode(Set<AppInfo.Create>.self)
+        let creates = try req.content.decode(Set<AppInfoCreateSingleRequest>.self)
 
         // 1. Batch query existing AppInfo
         let existingAppInfos = try await AppInfo.query(on: req.db)
@@ -189,8 +251,8 @@ struct AppInfoController: RouteCollection {
     @Sendable
     func createSingle(req: Request) async throws -> AppInfo {
         let iconPackVersionId = try? req.auth.require(IconPackVersion.self).requireID()
-        guard let create = try req.content.decode([AppInfo.Create].self).first else {
-            throw InternalError.decodingError([AppInfo.Create].self)
+        guard let create = try req.content.decode([AppInfoCreateSingleRequest].self).first else {
+            throw InternalError.decodingError([AppInfoCreateSingleRequest].self)
         }
 
         // 1. Find or create an app info
