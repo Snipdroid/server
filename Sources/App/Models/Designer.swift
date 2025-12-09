@@ -14,7 +14,7 @@ final class Designer: Model, Authenticatable, @unchecked Sendable {
     var id: UUID?
 
     @Children(for: \.$designer)
-    var iconPackVersions: [IconPackVersion]
+    var iconPacks: [IconPack]
 
     @Field(key: "oidc_subject")
     var oidcSubject: String

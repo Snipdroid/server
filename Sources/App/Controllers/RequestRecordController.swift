@@ -21,7 +21,7 @@ struct RequestRecordController: RouteCollection {
     func deleteRequest(req: Request) async throws -> HTTPStatus {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
-        
+
         let requestRecordId = try req.parameters.require("requestRecordId", as: UUID.self)
 
         guard let requestRecord = try await RequestRecord.query(on: req.db)
@@ -31,7 +31,16 @@ struct RequestRecordController: RouteCollection {
             throw Abort(.notFound)
         }
 
-        guard requestRecord.iconPackVersion?.$designer.id == designerId else {
+        // Verify ownership through the icon pack chain
+        guard let iconPackVersion = requestRecord.iconPackVersion else {
+            throw Abort(.forbidden)
+        }
+
+        guard let iconPack = try await IconPack.find(iconPackVersion.$iconPack.id, on: req.db) else {
+            throw Abort(.forbidden)
+        }
+
+        guard iconPack.$designer.id == designerId else {
             throw Abort(.forbidden)
         }
 

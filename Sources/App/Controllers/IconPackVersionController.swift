@@ -4,20 +4,29 @@ import VaporToOpenAPI
 
 struct IconPackVersionController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
-        let designer = routes.grouped("icon-pack-version")
-
-        designer
+        let versions = routes
+            .grouped("icon-pack")
             .grouped(OIDCAuthenticator())
-            .post("create", use: create)
+
+        versions
+            .post(":iconPackId", "version", "create", use: create)
             .openAPI(
                 summary: "Create icon pack version",
                 description: "Create a new icon pack version",
                 body: .type(IconPackVersion.Create.self),
                 response: .type(IconPackVersion.DTO.self)
             )
-        designer
-            .grouped(OIDCAuthenticator())
-            .get(":iconPackVersionId", "requests", use: requests)
+
+        versions
+            .get(":iconPackId", "versions", use: listVersions)
+            .openAPI(
+                summary: "List icon pack versions",
+                description: "List all versions for an icon pack",
+                response: .type([IconPackVersion.DTO].self)
+            )
+
+        versions
+            .get(":iconPackId", "version", ":versionId", "requests", use: requests)
             .openAPI(
                 summary: "Get requests",
                 description: "Get requests for an icon pack version",
@@ -28,65 +37,99 @@ struct IconPackVersionController: RouteCollection {
     @Sendable
     func create(req: Request) async throws -> IconPackVersion.DTO {
         let designer = try req.auth.require(Designer.self)
+        let designerId = try designer.requireID()
 
-        guard let designerId = try? designer.requireID() else {
-            throw InternalError.failedToAcquireID(Designer.self)
+        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
+
+        // Verify the icon pack exists and belongs to the designer
+        guard let iconPack = try await IconPack.query(on: req.db)
+            .filter(\.$id == iconPackId)
+            .first() else {
+                throw Abort(.notFound)
+            }
+
+        guard iconPack.$designer.id == designerId else {
+            throw Abort(.forbidden)
         }
 
         let create = try req.content.decode(IconPackVersion.Create.self)
 
-        // 1. Ensure the app version does not already exist
+        // Ensure the version does not already exist for this icon pack
         guard try await IconPackVersion.query(on: req.db)
-            .filter(\.$designer.$id == designerId)
+            .filter(\.$iconPack.$id == iconPackId)
             .filter(\.$versionString == create.versionString)
             .first() == nil else {
                 throw InternalError.violationOfUniqueConstraint(IconPackVersion.self)
             }
 
-        // 2. Create the app version
-        let newIconPackVersion = IconPackVersion(designerId: designerId, versionString: create.versionString)
-        try await newIconPackVersion.save(on: req.db)
+        // Create the version
+        let newVersion = IconPackVersion(iconPackId: iconPackId, versionString: create.versionString)
+        try await newVersion.save(on: req.db)
 
-        // 3. Retrieve the app version and generate a token
-        guard let iconPackVersion = try await IconPackVersion
-            .query(on: req.db)
-            .filter(\.$designer.$id == designerId)
-            .filter(\.$versionString == create.versionString)
-            .first() else {
-            throw InternalError.failedToAcquireEntity(IconPackVersion.self)
-        }
-
-        guard let iconPackVersionID = try? iconPackVersion.requireID() else {
-            throw InternalError.failedToAcquireID(IconPackVersion.self)
-        }
-        
-        let payload = IconPackVersion.Token(expiration: .init(value: create.expireAt), id: iconPackVersionID)
-        return try await iconPackVersion.toDTO(token: req.jwt.sign(payload))
+        // Generate a token
+        let versionId = try newVersion.requireID()
+        let payload = IconPackVersion.Token(expiration: .init(value: create.expireAt), id: versionId)
+        return try await newVersion.toDTO(token: req.jwt.sign(payload))
     }
 
+    @Sendable
+    func listVersions(req: Request) async throws -> [IconPackVersion.DTO] {
+        let designer = try req.auth.require(Designer.self)
+        let designerId = try designer.requireID()
 
-    // GET /icon-pack-version/:iconPackVersionId/requests
+        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
+
+        // Verify the icon pack exists and belongs to the designer
+        guard let iconPack = try await IconPack.query(on: req.db)
+            .filter(\.$id == iconPackId)
+            .first() else {
+                throw Abort(.notFound)
+            }
+
+        guard iconPack.$designer.id == designerId else {
+            throw Abort(.forbidden)
+        }
+
+        let versions = try await IconPackVersion.query(on: req.db)
+            .filter(\.$iconPack.$id == iconPackId)
+            .all()
+
+        return versions.map { $0.toDTO(token: nil) }
+    }
+
     @Sendable
     func requests(req: Request) async throws -> Page<RequestRecord> {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
-        
-        let iconPackVersionId = try req.parameters.require("iconPackVersionId", as: UUID.self)
 
-        guard let iconPackVersion = try await IconPackVersion.query(on: req.db)
-            .filter(\.$id == iconPackVersionId)
+        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
+        let versionId = try req.parameters.require("versionId", as: UUID.self)
+
+        // Verify the icon pack exists and belongs to the designer
+        guard let iconPack = try await IconPack.query(on: req.db)
+            .filter(\.$id == iconPackId)
             .first() else {
-            throw Abort(.notFound)
+                throw Abort(.notFound)
+            }
+
+        guard iconPack.$designer.id == designerId else {
+            throw Abort(.forbidden)
         }
 
-        guard iconPackVersion.$designer.id == designerId else {
+        // Verify the version exists and belongs to this icon pack
+        guard let version = try await IconPackVersion.query(on: req.db)
+            .filter(\.$id == versionId)
+            .first() else {
+                throw Abort(.notFound)
+            }
+
+        guard version.$iconPack.id == iconPackId else {
             throw Abort(.forbidden)
         }
 
         return try await RequestRecord.query(on: req.db)
-            .filter(\.$iconPackVersion.$id, .equal, iconPackVersionId)
+            .filter(\.$iconPackVersion.$id, .equal, versionId)
             .with(\.$appInfo)
             .paginate(for: req)
     }
-
 }

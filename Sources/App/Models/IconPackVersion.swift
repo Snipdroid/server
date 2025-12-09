@@ -7,12 +7,12 @@ import struct Foundation.Date
 /// afterwards with `@unchecked Sendable`.
 final class IconPackVersion: Model, @unchecked Sendable {
     static let schema = "icon_pack_versions"
-    
+
     @ID(key: .id)
     var id: UUID?
 
-    @Parent(key: "designer_id")
-    var designer: Designer
+    @Parent(key: "icon_pack_id")
+    var iconPack: IconPack
 
     @Children(for: \.$iconPackVersion)
     var requestRecords: [RequestRecord]
@@ -25,9 +25,9 @@ final class IconPackVersion: Model, @unchecked Sendable {
 
     init() { }
 
-    init(id: UUID? = nil, designerId: Designer.IDValue, versionString: String) {
+    init(id: UUID? = nil, iconPackId: IconPack.IDValue, versionString: String) {
         self.id = id
-        self.$designer.id = designerId
+        self.$iconPack.id = iconPackId
         self.versionString = versionString
     }
 }
@@ -37,10 +37,10 @@ struct CreateIconPackVersion: AsyncMigration {
     func prepare(on database: Database) async throws {
         try await database.schema(IconPackVersion.schema)
             .id()
-            .field("designer_id", .uuid, .references(Designer.schema, "id"))
+            .field("icon_pack_id", .uuid, .required, .references(IconPack.schema, "id", onDelete: .cascade))
             .field("version_string", .string, .required)
             .field("created_at", .datetime)
-            .unique(on: "version_string")
+            .unique(on: "icon_pack_id", "version_string")
             .create()
     }
 

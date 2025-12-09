@@ -27,8 +27,9 @@ struct DailySummaryJob: AsyncScheduledJob, AsyncJob {
 
             let count = try await RequestRecord.query(on: context.application.db)
                 .join(parent: \.$iconPackVersion)
-                .join(from: IconPackVersion.self, parent: \.$designer)
-                .filter(IconPackVersion.self, \.$designer.$id, .equal, id)
+                .join(from: IconPackVersion.self, parent: \.$iconPack)
+                .join(from: IconPack.self, parent: \.$designer)
+                .filter(IconPack.self, \.$designer.$id, .equal, id)
                 .filter(\.$createdAt, .greaterThanOrEqual, startOfYesterday)
                 .filter(\.$createdAt, .lessThan, startOfToday)
                 .count()

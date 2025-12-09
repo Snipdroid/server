@@ -1,14 +1,15 @@
 import Fluent
 import Vapor
-import struct Foundation.UUID
+
 import struct Foundation.Date
+import struct Foundation.UUID
 
 /// Property wrappers interact poorly with `Sendable` checking, causing a warning for the `@ID` property
 /// It is recommended you write your model with sendability checking on and then suppress the warning
 /// afterwards with `@unchecked Sendable`.
-final class AppInfo: Model, @unchecked Sendable {
+final class AppInfo: Model, Content, @unchecked Sendable {
     static let schema = "app_infos"
-    
+
     @ID(key: .id)
     var id: UUID?
 
@@ -30,9 +31,12 @@ final class AppInfo: Model, @unchecked Sendable {
     @Field(key: "count")
     var count: Int
 
-    init() { }
+    init() {}
 
-    init(id: UUID? = nil, defaultName: String, packageName: String, mainActivity: String, count: Int = 0) {
+    init(
+        id: UUID? = nil, defaultName: String, packageName: String, mainActivity: String,
+        count: Int = 0
+    ) {
         self.id = id
         self.defaultName = defaultName
         self.packageName = packageName
@@ -57,5 +61,3 @@ struct CreateAppInfo: AsyncMigration {
         try await database.schema(AppInfo.schema).delete()
     }
 }
-
-extension AppInfo: Content {}
