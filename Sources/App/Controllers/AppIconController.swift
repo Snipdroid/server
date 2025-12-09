@@ -10,8 +10,9 @@ struct AppIconController: RouteCollection {
 
         appIcon
             .get(use: redirect)
-            .openAPI (
+            .openAPI(
                 summary: "Get app icon",
+                query: .type(AppIconRequest.self)
             )
             .response(
                 statusCode: 307,
@@ -21,7 +22,7 @@ struct AppIconController: RouteCollection {
 
         appIcon
             .get("generate-upload-url", use: generateUploadURL)
-            .openAPI (
+            .openAPI(
                 summary: "Generate upload URL",
                 query: .type(UploadRequest.self),
                 response: .type(String.self)
@@ -35,7 +36,7 @@ struct AppIconController: RouteCollection {
 
     @Sendable
     func redirect(req: Request) async throws -> Response {
-        let packageName = try req.query.get(String.self, at: "packageName")
+        let packageName = try req.query.decode(AppIconRequest.self).packageName
 
         let iconURL = try getIconURL(req: req, packageName: packageName)
 
@@ -43,7 +44,18 @@ struct AppIconController: RouteCollection {
             url: iconURL, httpMethod: .GET, expires: .minutes(60))
 
         let redirectResponse = req.redirect(to: signedURL.absoluteString, redirectType: .temporary)
-        redirectResponse.headers.add(name: .cacheControl, value: "public, max-age=3600")
+        redirectResponse.headers.cacheControl = .init(
+            mustRevalidated: false,
+            noCache: false,
+            noStore: false,
+            noTransform: false,
+            isPublic: true,
+            isPrivate: false,
+            proxyRevalidate: false,
+            onlyIfCached: false,
+            immutable: true,
+            maxAge: 3300
+        )
         return redirectResponse
     }
 
