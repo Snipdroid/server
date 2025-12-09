@@ -1,13 +1,16 @@
 import Fluent
-import struct Foundation.UUID
+import FluentDTOMacro
+
 import struct Foundation.Date
+import struct Foundation.UUID
 
 /// Property wrappers interact poorly with `Sendable` checking, causing a warning for the `@ID` property
 /// It is recommended you write your model with sendability checking on and then suppress the warning
 /// afterwards with `@unchecked Sendable`.
+@FluentDTO
 final class RequestRecord: Model, @unchecked Sendable {
     static let schema = "request_records"
-    
+
     @ID(key: .id)
     var id: UUID?
 
@@ -23,7 +26,7 @@ final class RequestRecord: Model, @unchecked Sendable {
     @OptionalParent(key: "icon_pack_version_id")
     var iconPackVersion: IconPackVersion?
 
-    init() { }
+    init() {}
 
     init(id: UUID? = nil, appInfoId: UUID, iconPackVersionId: UUID?) {
         self.id = id

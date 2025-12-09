@@ -1,13 +1,16 @@
 import Fluent
-import struct Foundation.UUID
+import FluentDTOMacro
+
 import struct Foundation.Date
+import struct Foundation.UUID
 
 /// Property wrappers interact poorly with `Sendable` checking, causing a warning for the `@ID` property
 /// It is recommended you write your model with sendability checking on and then suppress the warning
 /// afterwards with `@unchecked Sendable`.
+@FluentDTO
 final class AppLocalizedName: Model, @unchecked Sendable {
     static let schema = "app_localized_names"
-    
+
     @ID(key: .id)
     var id: UUID?
 
@@ -29,7 +32,7 @@ final class AppLocalizedName: Model, @unchecked Sendable {
     @Timestamp(key: "updated_at", on: .update)
     var updatedAt: Date?
 
-    init() { }
+    init() {}
 
     init(id: UUID? = nil, appInfoId: UUID, languageCode: String, name: String, isPrimary: Bool) {
         self.id = id

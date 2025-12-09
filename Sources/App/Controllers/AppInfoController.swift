@@ -14,7 +14,7 @@ struct AppInfoController: RouteCollection {
                 description:
                     "Search for apps using a simple query or advanced filters. The `query` parameter searches across name, package name, and main activity. Advanced filters (byName, byPackageName, byMainActivity) can be combined with query using AND logic. Use `sortBy` to control result ordering.",
                 query: .type(AppInfoQueryRequest.self),
-                response: .type(Page<AppInfo.DTO>.self)
+                response: .type(Page<AppInfoDTO>.self)
             )
 
         appInfo.grouped(IconPackVersionAuthenticator())
@@ -28,12 +28,12 @@ struct AppInfoController: RouteCollection {
                     A request record is created for each app to associate it with the authenticated icon pack.
                     """,
                 body: .type(Set<AppInfoCreateSingleRequest>.self),
-                response: .type([AppInfo.DTO].self)
+                response: .type([AppInfoDTO].self)
             )
     }
 
     @Sendable
-    func search(req: Request) async throws -> Page<AppInfo.DTO> {
+    func search(req: Request) async throws -> Page<AppInfoDTO> {
         let query = try req.query.decode(AppInfoQueryRequest.self)
         let sortBy = query.sortBy ?? .count
 
@@ -250,7 +250,7 @@ struct AppInfoController: RouteCollection {
     }
 
     @Sendable
-    func createSingle(req: Request) async throws -> AppInfo.DTO {
+    func createSingle(req: Request) async throws -> AppInfoDTO {
         let iconPackVersionId = try? req.auth.require(IconPackVersion.self).requireID()
         guard let create = try req.content.decode([AppInfoCreateSingleRequest].self).first else {
             throw InternalError.decodingError([AppInfoCreateSingleRequest].self)

@@ -1,10 +1,14 @@
 import Fluent
-import struct Foundation.UUID
+import FluentDTOMacro
+import Vapor
+
 import struct Foundation.Date
+import struct Foundation.UUID
 
 /// Property wrappers interact poorly with `Sendable` checking, causing a warning for the `@ID` property
 /// It is recommended you write your model with sendability checking on and then suppress the warning
 /// afterwards with `@unchecked Sendable`.
+@FluentDTO
 final class IconPackVersion: Model, @unchecked Sendable {
     static let schema = "icon_pack_versions"
 
@@ -23,7 +27,7 @@ final class IconPackVersion: Model, @unchecked Sendable {
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
-    init() { }
+    init() {}
 
     init(id: UUID? = nil, iconPackId: IconPack.IDValue, versionString: String) {
         self.id = id
@@ -32,12 +36,17 @@ final class IconPackVersion: Model, @unchecked Sendable {
     }
 }
 
+// I don't know why but this one seems special it needs an Content extension explicitly.
+extension IconPackVersionDTO: Content {}
 
 struct CreateIconPackVersion: AsyncMigration {
     func prepare(on database: Database) async throws {
         try await database.schema(IconPackVersion.schema)
             .id()
-            .field("icon_pack_id", .uuid, .required, .references(IconPack.schema, "id", onDelete: .cascade))
+            .field(
+                "icon_pack_id", .uuid, .required,
+                .references(IconPack.schema, "id", onDelete: .cascade)
+            )
             .field("version_string", .string, .required)
             .field("created_at", .datetime)
             .unique(on: "icon_pack_id", "version_string")

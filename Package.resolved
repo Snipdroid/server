@@ -1,5 +1,5 @@
 {
-  "originHash" : "09bc60af445e1ad536898394aafedcac9d574ddc27dad16d1dc05b507e95b50e",
+  "originHash" : "bac3af6c744fe26003b086770cb2de9bcce4a37ce00e8e02f13331b0dbbe27b4",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -35,6 +35,15 @@
       "state" : {
         "revision" : "2fe9e36daf4bdb5edcf193e0d0806ba2074d2864",
         "version" : "4.13.0"
+      }
+    },
+    {
+      "identity" : "fluent-dto-macro",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dioKaratzas/fluent-dto-macro.git",
+      "state" : {
+        "revision" : "e7c929975f0f638a37864429ef91cd1f2e454575",
+        "version" : "1.1.1"
       }
     },
     {

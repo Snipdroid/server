@@ -21,6 +21,8 @@ let package = Package(
         .package(url: "https://github.com/vapor/queues-redis-driver.git", from: "1.0.0"),
         // 📄 OpenAPI doc generator
         .package(url: "https://github.com/dankinsoid/VaporToOpenAPI", from: "4.0.0"),
+        // 📦 Fluent model to DTO generator
+        .package(url: "https://github.com/dioKaratzas/fluent-dto-macro.git", from: "1.1.1"),
         // 🚀 AWS SDK for Swift
         .package(url: "https://github.com/soto-project/soto.git", from: "7.0.0"),
         // 🚀 S3 file transfer for Soto
@@ -39,6 +41,7 @@ let package = Package(
                 .product(name: "QueuesRedisDriver", package: "queues-redis-driver"),
                 .product(name: "SotoS3", package: "soto"),
                 .product(name: "VaporToOpenAPI", package: "VaporToOpenAPI"),
+                .product(name: "FluentDTOMacro", package: "fluent-dto-macro"),
             ],
             swiftSettings: swiftSettings
         ),

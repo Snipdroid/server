@@ -15,7 +15,7 @@ struct IconPackController: RouteCollection {
                 summary: "Create icon pack",
                 description: "Create a new icon pack",
                 body: .type(IconPack.Create.self),
-                response: .type(IconPack.DTO.self)
+                response: .type(IconPackDTO.self)
             )
 
         iconPacks
@@ -23,7 +23,7 @@ struct IconPackController: RouteCollection {
             .openAPI(
                 summary: "List icon packs",
                 description: "List all icon packs for the authenticated designer",
-                response: .type([IconPack.DTO].self)
+                response: .type([IconPackDTO].self)
             )
 
         iconPacks
@@ -31,7 +31,7 @@ struct IconPackController: RouteCollection {
             .openAPI(
                 summary: "Get icon pack",
                 description: "Get a specific icon pack by ID",
-                response: .type(IconPack.DTO.self)
+                response: .type(IconPackDTO.self)
             )
 
         iconPacks
@@ -40,7 +40,7 @@ struct IconPackController: RouteCollection {
                 summary: "Update icon pack",
                 description: "Update an icon pack's name",
                 body: .type(IconPack.Update.self),
-                response: .type(IconPack.DTO.self)
+                response: .type(IconPackDTO.self)
             )
 
         iconPacks
@@ -53,7 +53,7 @@ struct IconPackController: RouteCollection {
     }
 
     @Sendable
-    func create(req: Request) async throws -> IconPack.DTO {
+    func create(req: Request) async throws -> IconPackDTO {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
 
@@ -76,7 +76,7 @@ struct IconPackController: RouteCollection {
     }
 
     @Sendable
-    func list(req: Request) async throws -> [IconPack.DTO] {
+    func list(req: Request) async throws -> [IconPackDTO] {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
 
@@ -88,7 +88,7 @@ struct IconPackController: RouteCollection {
     }
 
     @Sendable
-    func get(req: Request) async throws -> IconPack.DTO {
+    func get(req: Request) async throws -> IconPackDTO {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
 
@@ -110,7 +110,7 @@ struct IconPackController: RouteCollection {
     }
 
     @Sendable
-    func update(req: Request) async throws -> IconPack.DTO {
+    func update(req: Request) async throws -> IconPackDTO {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
 

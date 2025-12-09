@@ -1,4 +1,5 @@
 import Fluent
+import FluentDTOMacro
 import Vapor
 
 import struct Foundation.Date
@@ -7,6 +8,7 @@ import struct Foundation.UUID
 /// Property wrappers interact poorly with `Sendable` checking, causing a warning for the `@ID` property
 /// It is recommended you write your model with sendability checking on and then suppress the warning
 /// afterwards with `@unchecked Sendable`.
+@FluentDTO
 final class Designer: Model, Authenticatable, @unchecked Sendable {
     static let schema = "designers"
 
@@ -36,7 +38,10 @@ final class Designer: Model, Authenticatable, @unchecked Sendable {
 
     init() {}
 
-    init(id: UUID? = nil, oidcSubject: String, oidcIssuer: String, email: String? = nil, name: String? = nil) {
+    init(
+        id: UUID? = nil, oidcSubject: String, oidcIssuer: String, email: String? = nil,
+        name: String? = nil
+    ) {
         self.id = id
         self.oidcSubject = oidcSubject
         self.oidcIssuer = oidcIssuer
@@ -44,6 +49,8 @@ final class Designer: Model, Authenticatable, @unchecked Sendable {
         self.name = name
     }
 }
+
+extension DesignerDTO: Content {}
 
 struct CreateDesigner: AsyncMigration {
     func prepare(on database: Database) async throws {

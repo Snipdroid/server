@@ -27,7 +27,7 @@ struct DesignerController: RouteCollection {
             .openAPI(
                 summary: "Get Current Designer",
                 description: "Get the currently authenticated designer's profile",
-                response: .type(Designer.DTO.self)
+                response: .type(DesignerDTO.self)
             )
 
         protected
@@ -35,18 +35,18 @@ struct DesignerController: RouteCollection {
             .openAPI(
                 summary: "Sync Designer Profile",
                 description: "Fetch and update profile data from OIDC provider's userinfo endpoint",
-                response: .type(Designer.DTO.self)
+                response: .type(DesignerDTO.self)
             )
     }
 
     @Sendable
-    func me(req: Request) async throws -> Designer.DTO {
+    func me(req: Request) async throws -> DesignerDTO {
         let designer = try req.auth.require(Designer.self)
         return designer.toDTO()
     }
 
     @Sendable
-    func sync(req: Request) async throws -> Designer.DTO {
+    func sync(req: Request) async throws -> DesignerDTO {
         let designer = try req.auth.require(Designer.self)
         let oidcConfig = req.application.oidc
 
@@ -61,7 +61,9 @@ struct DesignerController: RouteCollection {
         }
 
         guard response.status == .ok else {
-            throw Abort(.badGateway, reason: "Failed to fetch userinfo from OIDC provider: \(response.status)")
+            throw Abort(
+                .badGateway,
+                reason: "Failed to fetch userinfo from OIDC provider: \(response.status)")
         }
 
         let userinfo = try response.content.decode(UserinfoResponse.self)
