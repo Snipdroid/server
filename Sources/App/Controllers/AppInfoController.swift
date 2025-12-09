@@ -14,7 +14,7 @@ struct AppInfoController: RouteCollection {
                 description:
                     "Search for apps using a simple query or advanced filters. The `query` parameter searches across name, package name, and main activity. Advanced filters (byName, byPackageName, byMainActivity) can be combined with query using AND logic. Use `sortBy` to control result ordering.",
                 query: .type(AppInfoQueryRequest.self),
-                response: .type(Page<AppInfo>.self)
+                response: .type(Page<AppInfo.DTO>.self)
             )
 
         appInfo.grouped(IconPackVersionAuthenticator())
@@ -28,12 +28,12 @@ struct AppInfoController: RouteCollection {
                     A request record is created for each app to associate it with the authenticated icon pack.
                     """,
                 body: .type(Set<AppInfoCreateSingleRequest>.self),
-                response: .type([AppInfo].self)
+                response: .type([AppInfo.DTO].self)
             )
     }
 
     @Sendable
-    func search(req: Request) async throws -> Page<AppInfo> {
+    func search(req: Request) async throws -> Page<AppInfo.DTO> {
         let query = try req.query.decode(AppInfoQueryRequest.self)
         let sortBy = query.sortBy ?? .count
 
@@ -129,7 +129,8 @@ struct AppInfoController: RouteCollection {
             queryBuilder = queryBuilder.sort(\.$count, .descending)
         }
 
-        return try await queryBuilder.paginate(for: req)
+        let page = try await queryBuilder.paginate(for: req)
+        return page.map { $0.toDTO() }
     }
 
     @Sendable
@@ -249,7 +250,7 @@ struct AppInfoController: RouteCollection {
     }
 
     @Sendable
-    func createSingle(req: Request) async throws -> AppInfo {
+    func createSingle(req: Request) async throws -> AppInfo.DTO {
         let iconPackVersionId = try? req.auth.require(IconPackVersion.self).requireID()
         guard let create = try req.content.decode([AppInfoCreateSingleRequest].self).first else {
             throw InternalError.decodingError([AppInfoCreateSingleRequest].self)
@@ -300,6 +301,6 @@ struct AppInfoController: RouteCollection {
             appInfoId: appInfoId, iconPackVersionId: iconPackVersionId)
         try await newRequestRecord.save(on: req.db)
 
-        return appInfo
+        return appInfo.toDTO()
     }
 }
