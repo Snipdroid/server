@@ -202,7 +202,7 @@ struct DesignerController: RouteCollection {
             guard let appInfo = appInfos.first(where: { $0.id == id }),
                 let count = countMap[id]
             else { return nil }
-            return AppInfoWithRequestCount(appInfo: appInfo, count: count)
+            return AppInfoWithRequestCount(appInfo: appInfo.toDTO(), count: count)
         }
 
         // Create and return the page

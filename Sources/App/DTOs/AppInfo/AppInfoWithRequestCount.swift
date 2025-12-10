@@ -1,6 +1,6 @@
 import Vapor
 
 struct AppInfoWithRequestCount: Content {
-    let appInfo: AppInfo
+    let appInfo: AppInfoDTO
     let count: Int
 }
