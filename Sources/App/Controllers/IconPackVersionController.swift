@@ -31,7 +31,7 @@ struct IconPackVersionController: RouteCollection {
             .openAPI(
                 summary: "Get requests",
                 description: "Get requests for an icon pack version",
-                response: .type(Page<RequestRecord>.self)
+                response: .type(Page<RequestRecordDTO>.self)
             )
 
         versions
@@ -112,7 +112,7 @@ struct IconPackVersionController: RouteCollection {
     }
 
     @Sendable
-    func requests(req: Request) async throws -> Page<RequestRecord> {
+    func requests(req: Request) async throws -> Page<RequestRecordDTO> {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
 
@@ -149,6 +149,7 @@ struct IconPackVersionController: RouteCollection {
             .filter(\.$iconPackVersion.$id, .equal, versionId)
             .with(\.$appInfo)
             .paginate(for: req)
+            .map { $0.toDTO() }
     }
 
     @Sendable
