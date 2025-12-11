@@ -30,7 +30,12 @@ struct IconPackController: RouteCollection {
             .get(":iconPackId", use: get)
             .openAPI(
                 summary: "Get icon pack",
-                description: "Get a specific icon pack by ID",
+                description:
+                    """
+                    Get a specific icon pack by ID,
+                    does not include its icon pack verisons,
+                    use `/icon-pack/:iconPackId/versions` instead
+                    """,
                 response: .type(IconPackDTO.self)
             )
 
