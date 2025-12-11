@@ -175,78 +175,55 @@ struct AppInfoController: RouteCollection {
         // 4. Batch save new AppInfos
         try await newAppInfos.create(on: req.db)
 
-        // 5. Get all AppInfos (both existing and new)
-        let allAppInfos = existingAppInfos + newAppInfos
+        // 5. Build complete lookup map for all AppInfos (existing + new)
+        let allAppInfosMap = (existingAppInfos + newAppInfos).reduce(into: existingMap) { result, appInfo in
+            result[AppInfoKey(packageName: appInfo.packageName, mainActivity: appInfo.mainActivity)] = appInfo
+        }
 
         // 6. Batch query existing localized names
-        let existingLocalizedNames = try await AppLocalizedName.query(on: req.db)
-            .group(.or) { or in
-                allAppInfos.forEach { appInfo in
-                    if let appInfoId = try? appInfo.requireID() {
-                        or.filter(\.$appInfo.$id == appInfoId)
-                    } else {
-                        req.logger.report(error: InternalError.failedToAcquireID(AppInfo.self))
-                    }
-                }
-            }
+        let appInfoIds = allAppInfosMap.values.compactMap { try? $0.requireID() }
+        let existingLocalizedNamesMap = try await AppLocalizedName.query(on: req.db)
+            .filter(\.$appInfo.$id ~~ appInfoIds)
             .all()
-
-        // 7. Create lookup map for existing localized names
-        struct LocalizedNameKey: Hashable {
-            let appInfoId: UUID
-            let languageCode: String
-        }
-        let existingLocalizedNamesMap: [LocalizedNameKey: AppLocalizedName] =
-            existingLocalizedNames.reduce(into: [:]) { result, name in
-                result[
-                    LocalizedNameKey(appInfoId: name.$appInfo.id, languageCode: name.languageCode)] =
-                    name
+            .reduce(into: [UUID: [String: AppLocalizedName]]()) { result, name in
+                result[name.$appInfo.id, default: [:]][name.languageCode] = name
             }
 
-        // 8. Prepare new localized names and updates
-        var newLocalizedNames: [AppLocalizedName] = []
-        var localizedNamesToUpdate: [AppLocalizedName] = []
+        // 7. Prepare new localized names and updates by looking up AppInfo by key
+        let (newLocalizedNames, localizedNamesToUpdate) = creates.reduce(into: ([AppLocalizedName](), [AppLocalizedName]())) { result, create in
+            let key = AppInfoKey(packageName: create.packageName, mainActivity: create.mainActivity)
+            guard let appInfo = allAppInfosMap[key], let appInfoId = try? appInfo.requireID() else { return }
 
-        for (appInfo, create) in zip(allAppInfos, creates) {
-            guard let appInfoId = try? appInfo.requireID() else {
-                req.logger.report(error: InternalError.failedToAcquireID(AppInfo.self))
-                continue
-            }
-            let key = LocalizedNameKey(appInfoId: appInfoId, languageCode: create.languageCode)
-
-            if let existingName = existingLocalizedNamesMap[key] {
+            if let existingName = existingLocalizedNamesMap[appInfoId]?[create.languageCode] {
                 existingName.name = create.localizedName
-                localizedNamesToUpdate.append(existingName)
+                result.1.append(existingName)
             } else {
-                let newName = AppLocalizedName(
+                result.0.append(AppLocalizedName(
                     appInfoId: appInfoId,
                     languageCode: create.languageCode,
                     name: create.localizedName,
                     isPrimary: false
-                )
-                newLocalizedNames.append(newName)
+                ))
             }
         }
 
-        // 9. Batch create new localized names
+        // 8. Batch create new localized names
         try await newLocalizedNames.create(on: req.db)
 
-        // 10. Update existing localized names one by one
+        // 9. Update existing localized names
         for name in localizedNamesToUpdate {
             try await name.update(on: req.db)
         }
 
-        // 11. Batch create request records
-        let requestRecords = allAppInfos.compactMap { appInfo -> RequestRecord? in
-            guard let appInfoId = try? appInfo.requireID() else {
-                req.logger.report(error: InternalError.failedToAcquireID(AppInfo.self))
-                return nil
-            }
+        // 10. Batch create request records
+        let requestRecords = creates.compactMap { create -> RequestRecord? in
+            let key = AppInfoKey(packageName: create.packageName, mainActivity: create.mainActivity)
+            guard let appInfoId = try? allAppInfosMap[key]?.requireID() else { return nil }
             return RequestRecord(appInfoId: appInfoId, iconPackVersionId: iconPackVersionId)
         }
         try await requestRecords.create(on: req.db)
 
-        return allAppInfos
+        return Array(allAppInfosMap.values)
     }
 
     @Sendable
