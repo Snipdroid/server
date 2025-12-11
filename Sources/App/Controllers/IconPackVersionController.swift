@@ -35,6 +35,7 @@ struct IconPackVersionController: RouteCollection {
             .openAPI(
                 summary: "Get requests",
                 description: "Get requests for an icon pack version",
+                query: .type(PageRequest.self),
                 response: .type(Page<RequestRecordDTO>.self)
             )
 
