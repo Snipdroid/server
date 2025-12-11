@@ -22,8 +22,12 @@ struct IconPackVersionController: RouteCollection {
             .get(":iconPackId", "versions", use: listVersions)
             .openAPI(
                 summary: "List icon pack versions",
-                description: "List all versions for an icon pack",
-                response: .type([IconPackVersionDTO].self)
+                description: """
+                    List all versions for an icon pack,
+                    sorted by creation date in descending order
+                    """,
+                query: .type(PageRequest.self),
+                response: .type(Page<IconPackVersionDTO>.self)
             )
 
         versions
@@ -93,7 +97,7 @@ struct IconPackVersionController: RouteCollection {
     }
 
     @Sendable
-    func listVersions(req: Request) async throws -> [IconPackVersionDTO] {
+    func listVersions(req: Request) async throws -> Page<IconPackVersionDTO> {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
 
@@ -114,7 +118,7 @@ struct IconPackVersionController: RouteCollection {
 
         let versions = try await IconPackVersion.query(on: req.db)
             .filter(\.$iconPack.$id == iconPackId)
-            .all()
+            .paginate(for: req)
 
         return versions.map { $0.toDTO() }
     }
