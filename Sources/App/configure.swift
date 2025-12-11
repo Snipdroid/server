@@ -3,8 +3,8 @@ import FluentPostgresDriver
 import JWT
 import NIOSSL
 import QueuesRedisDriver
-import Vapor
 import SotoS3
+import Vapor
 
 // configures your application
 public func configure(_ app: Application) async throws {
@@ -32,22 +32,30 @@ public func configure(_ app: Application) async throws {
         app.aws.s3 = S3(client: app.aws.client, endpoint: awsEndpoint)
     }
 
-    app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
-        hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-        port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? SQLPostgresConfiguration.ianaPortNumber,
-        username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
-        password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
-        database: Environment.get("DATABASE_NAME") ?? "vapor_database",
-        tls: .prefer(try .init(configuration: .clientDefault)))
-    ), as: .psql)
+    guard let jwtSecret = Environment.get("JWT_SECRET") else {
+        fatalError("JWT_SECRET environment variable is required")
+    }
+    await app.jwt.keys.add(hmac: HMACKey(from: jwtSecret), digestAlgorithm: .sha256)
 
-    let encoder = JSONEncoder()
-    encoder.dateEncodingStrategy = .millisecondsSince1970
-    ContentConfiguration.global.use(encoder: encoder, for: .json)
+    app.databases.use(
+        DatabaseConfigurationFactory.postgres(
+            configuration: .init(
+                hostname: Environment.get("DATABASE_HOST") ?? "localhost",
+                port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:))
+                    ?? SQLPostgresConfiguration.ianaPortNumber,
+                username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
+                password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
+                database: Environment.get("DATABASE_NAME") ?? "vapor_database",
+                tls: .prefer(try .init(configuration: .clientDefault)))
+        ), as: .psql)
 
-    let decoder = JSONDecoder()
-    decoder.dateDecodingStrategy = .millisecondsSince1970
-    ContentConfiguration.global.use(decoder: decoder, for: .json)
+    // let encoder = JSONEncoder()
+    // encoder.dateEncodingStrategy = .millisecondsSince1970
+    // ContentConfiguration.global.use(encoder: encoder, for: .json)
+
+    // let decoder = JSONDecoder()
+    // decoder.dateDecodingStrategy = .millisecondsSince1970
+    // ContentConfiguration.global.use(decoder: decoder, for: .json)
 
     try await migrations(app)
     // register routes
