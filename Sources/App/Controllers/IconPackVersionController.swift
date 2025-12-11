@@ -42,6 +42,14 @@ struct IconPackVersionController: RouteCollection {
                 body: .type(IconPackVersion.TokenRequest.self),
                 response: .type(IconPackVersion.TokenResponse.self)
             )
+
+        versions
+            .delete(":iconPackId", "version", ":versionId", use: deleteVersion)
+            .openAPI(
+                summary: "Delete icon pack version",
+                description: "Delete an icon pack version, returns the deleted version",
+                response: .type(IconPackVersionDTO.self)
+            )
     }
 
     @Sendable
@@ -194,5 +202,44 @@ struct IconPackVersionController: RouteCollection {
         let token = try await req.jwt.sign(payload)
 
         return .init(token: token)
+    }
+
+    @Sendable
+    func deleteVersion(req: Request) async throws -> IconPackVersionDTO {
+        let designer = try req.auth.require(Designer.self)
+        let designerId = try designer.requireID()
+
+        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
+        let versionId = try req.parameters.require("versionId", as: UUID.self)
+
+        // Verify the icon pack exists and belongs to the designer
+        guard
+            let iconPack = try await IconPack.query(on: req.db)
+                .filter(\.$id == iconPackId)
+                .first()
+        else {
+            throw Abort(.notFound)
+        }
+
+        guard iconPack.$designer.id == designerId else {
+            throw Abort(.forbidden)
+        }
+
+        // Verify the version exists and belongs to this icon pack
+        guard
+            let version = try await IconPackVersion.query(on: req.db)
+                .filter(\.$id == versionId)
+                .first()
+        else {
+            throw Abort(.notFound)
+        }
+
+        guard version.$iconPack.id == iconPackId else {
+            throw Abort(.forbidden)
+        }
+
+        try await version.delete(on: req.db)
+
+        return version.toDTO()
     }
 }
