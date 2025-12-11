@@ -47,7 +47,7 @@ struct CreateAppLocalizedName: AsyncMigration {
     func prepare(on database: Database) async throws {
         try await database.schema(AppLocalizedName.schema)
             .id()
-            .field("app_info_id", .uuid, .references(AppInfo.schema, "id"))
+            .field("app_info_id", .uuid, .references(AppInfo.schema, "id", onDelete: .cascade))
             .field("language_code", .string, .required)
             .field("name", .string, .required)
             .field("is_primary", .bool, .required)

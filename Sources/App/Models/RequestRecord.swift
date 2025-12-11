@@ -39,8 +39,14 @@ struct CreateRequestRecord: AsyncMigration {
     func prepare(on database: Database) async throws {
         try await database.schema(RequestRecord.schema)
             .id()
-            .field("app_info_id", .uuid, .required, .references(AppInfo.schema, "id"))
-            .field("icon_pack_version_id", .uuid, .references(IconPackVersion.schema, "id"))
+            .field(
+                "app_info_id", .uuid, .required,
+                .references(AppInfo.schema, "id", onDelete: .cascade)
+            )
+            .field(
+                "icon_pack_version_id", .uuid,
+                .references(IconPackVersion.schema, "id", onDelete: .cascade)
+            )
             .field("created_at", .datetime)
             .field("deleted_at", .datetime)
             .create()
