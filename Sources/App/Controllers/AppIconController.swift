@@ -25,11 +25,7 @@ struct AppIconController: RouteCollection {
             .openAPI(
                 summary: "Generate upload URL",
                 query: .type(UploadRequest.self),
-                response: .type(String.self)
-            )
-            .response(
-                statusCode: 200,
-                description: "Upload URL",
+                response: .type(AppIconGenerateUploadURLResponse.self)
             )
 
     }
@@ -64,7 +60,7 @@ struct AppIconController: RouteCollection {
     }
 
     @Sendable
-    func generateUploadURL(req: Request) async throws -> String {
+    func generateUploadURL(req: Request) async throws -> AppIconGenerateUploadURLResponse {
 
         let uploadRequest = try req.query.decode(UploadRequest.self)
 
@@ -84,7 +80,7 @@ struct AppIconController: RouteCollection {
         let signedURL = try await req.aws.s3.signURL(
             url: iconURL, httpMethod: .PUT, expires: .minutes(1))
 
-        return signedURL.absoluteString
+        return .init(uploadURL: signedURL)
     }
 
     private func getIconURL(req: Request, packageName: String) throws -> URL {

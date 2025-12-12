@@ -33,7 +33,6 @@ final class IconPackVersion: Model, @unchecked Sendable {
     }
 }
 
-// I don't know why but this one seems special it needs an Content extension explicitly.
 extension IconPackVersionDTO: Content {}
 
 struct CreateIconPackVersion: AsyncMigration {
