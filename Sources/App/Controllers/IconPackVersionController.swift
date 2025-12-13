@@ -4,13 +4,18 @@ import VaporToOpenAPI
 
 struct IconPackVersionController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
-        let versions =
+        let iconPack =
             routes
-            .grouped("icon-pack")
+            .grouped("icon-pack", ":iconPackId")
             .grouped(OIDCAuthenticator())
 
-        versions
-            .post(":iconPackId", "version", "create", use: create)
+        let version =
+            routes
+            .grouped("icon-pack", ":iconPackId", "version", ":versionId")
+            .grouped(OIDCAuthenticator())
+
+        iconPack
+            .post("version", "create", use: create)
             .openAPI(
                 summary: "Create icon pack version",
                 description: "Create a new icon pack version",
@@ -18,8 +23,8 @@ struct IconPackVersionController: RouteCollection {
                 response: .type(IconPackVersionDTO.self)
             )
 
-        versions
-            .get(":iconPackId", "versions", use: listVersions)
+        iconPack
+            .get("versions", use: listVersions)
             .openAPI(
                 summary: "List icon pack versions",
                 description: """
@@ -30,8 +35,8 @@ struct IconPackVersionController: RouteCollection {
                 response: .type(Page<IconPackVersionDTO>.self)
             )
 
-        versions
-            .get(":iconPackId", "version", ":versionId", "requests", use: requests)
+        version
+            .get("requests", use: requests)
             .openAPI(
                 summary: "Get requests",
                 description: "Get requests for an icon pack version",
@@ -39,8 +44,8 @@ struct IconPackVersionController: RouteCollection {
                 response: .type(Page<RequestRecordDTO>.self)
             )
 
-        versions
-            .post(":iconPackId", "version", ":versionId", "token", use: createToken)
+        version
+            .post("token", use: createToken)
             .openAPI(
                 summary: "Create access token",
                 description: "Generate an access token for an icon pack version",
@@ -48,8 +53,8 @@ struct IconPackVersionController: RouteCollection {
                 response: .type(IconPackVersion.TokenResponse.self)
             )
 
-        versions
-            .delete(":iconPackId", "version", ":versionId", use: deleteVersion)
+        version
+            .delete(use: deleteVersion)
             .openAPI(
                 summary: "Delete icon pack version",
                 description: "Delete an icon pack version, returns the deleted version",
@@ -117,8 +122,7 @@ struct IconPackVersionController: RouteCollection {
             throw Abort(.forbidden)
         }
 
-        let versions = try await IconPackVersion.query(on: req.db)
-            .filter(\.$iconPack.$id == iconPackId)
+        let versions = try await iconPack.$versions.query(on: req.db)
             .paginate(for: req)
 
         return versions.map { $0.toDTO() }
