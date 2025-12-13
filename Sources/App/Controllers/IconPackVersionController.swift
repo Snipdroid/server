@@ -40,7 +40,7 @@ struct IconPackVersionController: RouteCollection {
             .openAPI(
                 summary: "Get requests",
                 description: "Get requests for an icon pack version",
-                query: .type(PageRequest.self),
+                query: .all(of: .type(PageRequest.self), ["includingAdapted": .boolean]),
                 response: .type(Page<RequestRecordDTO>.self)
             )
 
@@ -135,6 +135,7 @@ struct IconPackVersionController: RouteCollection {
 
         let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
         let versionId = try req.parameters.require("versionId", as: UUID.self)
+        let includingAdapted = try req.query.get(Bool.self, at: "includingAdapted")
 
         // Verify the icon pack exists and belongs to the designer
         guard
@@ -162,9 +163,22 @@ struct IconPackVersionController: RouteCollection {
             throw Abort(.forbidden)
         }
 
-        return try await RequestRecord.query(on: req.db)
-            .filter(\.$iconPackVersion.$id, .equal, versionId)
+        var query = version.$requestRecords.query(on: req.db)
             .with(\.$appInfo)
+
+        if !includingAdapted {
+            query =
+                query
+                .join(
+                    IconPackApp.self,
+                    on: \RequestRecord.$appInfo.$id == \IconPackApp.$appInfo.$id
+                        && \IconPackApp.$iconPack.$id == iconPackId, method: .left
+                )
+                .filter(IconPackApp.self, \.$id == .null)
+        }
+
+        return
+            try await query
             .paginate(for: req)
             .map { $0.toDTO() }
     }
