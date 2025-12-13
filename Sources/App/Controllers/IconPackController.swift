@@ -55,6 +55,23 @@ struct IconPackController: RouteCollection {
                 description: "Delete an icon pack and all its versions",
                 response: .type(HTTPStatus.self)
             )
+
+        iconPacks
+            .post(":iconPackId", use: markAsAdapted)
+            .openAPI(
+                summary: "Mark app as adapted",
+                description: "Mark an app as adapted, or remove the adapted mark",
+                body: .type(IconPackMarkAppAsAdaptedRequest.self),
+                response: .type([IconPackAppDTO].self)
+            )
+
+        routes.get("icon-pack", ":iconPackId", "adapted-apps", use: getAdaptedApps)
+            .openAPI(
+                summary: "Get adapted apps",
+                description: "Get the list of apps that have been adapted",
+                query: .type(PageRequest.self),
+                response: .type(Page<AppInfoDTO>.self)
+            )
     }
 
     @Sendable
@@ -174,5 +191,68 @@ struct IconPackController: RouteCollection {
         try await iconPack.delete(on: req.db)
 
         return .noContent
+    }
+
+    @Sendable
+    func markAsAdapted(req: Request) async throws -> [IconPackAppDTO] {
+        let designer = try req.auth.require(Designer.self)
+        let designerId = try designer.requireID()
+
+        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
+        let markRequest = try req.content.decode(IconPackMarkAppAsAdaptedRequest.self)
+
+        return try await req.db.transaction { db in
+            // Get the icon pack
+            guard
+                let iconPack = try await IconPack.query(on: db)
+                    .filter(\.$id == iconPackId)
+                    .first()
+            else {
+                throw Abort(.notFound, reason: "Icon pack not found")
+            }
+
+            // Ensure the icon pack belongs to the authenticated designer
+            guard iconPack.$designer.id == designerId else {
+                throw Abort(
+                    .forbidden, reason: "Icon pack does not belong to the authenticated designer")
+            }
+
+            // Get the app
+            let appInfoList = try await AppInfo.query(on: db)
+                .filter(\.$id ~~ markRequest.appInfoIDs)
+                .all()
+
+            if markRequest.adapted {
+                try await iconPack.$adaptedApps.attach(appInfoList, on: db)
+            } else {
+                try await iconPack.$adaptedApps.detach(appInfoList, on: db)
+            }
+
+            return try await IconPackApp.query(on: db)
+                .filter(\.$iconPack.$id == iconPackId)
+                .filter(\.$appInfo.$id ~~ markRequest.appInfoIDs)
+                .all()
+                .map { $0.toDTO() }
+        }
+    }
+
+    @Sendable
+    func getAdaptedApps(req: Request) async throws -> Page<AppInfoDTO> {
+        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
+
+        guard
+            let iconPack =
+                try await IconPack
+                .query(on: req.db)
+                .filter(\.$id == iconPackId)
+                .first()
+        else {
+            throw Abort(.notFound, reason: "Icon pack not found")
+        }
+
+        return try await iconPack.$adaptedApps.query(on: req.db)
+            .paginate(for: req).map {
+                $0.toDTO()
+            }
     }
 }

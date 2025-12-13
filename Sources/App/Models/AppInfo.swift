@@ -33,6 +33,9 @@ final class AppInfo: Model, Content, @unchecked Sendable {
     @Field(key: "count")
     var count: Int
 
+    @Siblings(through: IconPackApp.self, from: \.$appInfo, to: \.$iconPack)
+    var iconPacks: [IconPack]
+
     init() {}
 
     init(
