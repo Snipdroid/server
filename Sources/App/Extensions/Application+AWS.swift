@@ -1,12 +1,12 @@
-import Vapor
 import SotoS3
+import Vapor
 
-public extension Application {
-    var aws: AWS {
+extension Application {
+    public var aws: AWS {
         .init(application: self)
     }
 
-    struct AWS {
+    public struct AWS {
         struct ClientKey: StorageKey {
             typealias Value = AWSClient
         }
@@ -21,7 +21,7 @@ public extension Application {
             nonmutating set {
                 self.application.storage.set(ClientKey.self, to: newValue) {
                     try $0.syncShutdown()
-                }            
+                }
             }
         }
 
@@ -47,6 +47,7 @@ extension Application.AWS {
     }
 }
 
+// Not used
 extension Application.AWS {
     struct S3BucketKey: StorageKey {
         typealias Value = String

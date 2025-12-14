@@ -84,12 +84,11 @@ struct AppIconController: RouteCollection {
     }
 
     private func getIconURL(req: Request, packageName: String) throws -> URL {
-        guard var components = URLComponents(string: req.aws.s3.endpoint),
-            let host = components.host
+        guard var components = URLComponents(string: req.aws.s3.endpoint)
         else {
             throw InternalError.invalidUrl(URLComponents.self, req.aws.s3.endpoint)
         }
-        components.host = "\(req.aws.s3Bucket).\(host)"
+
         components.path = "/apptracker/\(packageName).png"
 
         guard let componentsURL = components.url else {
