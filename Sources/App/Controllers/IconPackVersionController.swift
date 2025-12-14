@@ -165,16 +165,14 @@ struct IconPackVersionController: RouteCollection {
 
         var query = version.$requestRecords.query(on: req.db)
             .with(\.$appInfo)
+            .join(
+                IconPackApp.self,
+                on: \RequestRecord.$appInfo.$id == \IconPackApp.$appInfo.$id
+                    && \IconPackApp.$iconPack.$id == iconPackId, method: .left
+            )
 
         if !includingAdapted {
-            query =
-                query
-                .join(
-                    IconPackApp.self,
-                    on: \RequestRecord.$appInfo.$id == \IconPackApp.$appInfo.$id
-                        && \IconPackApp.$iconPack.$id == iconPackId, method: .left
-                )
-                .filter(IconPackApp.self, \.$id == .null)
+            query = query.filter(IconPackApp.self, \.$id == .null)
         }
 
         return
