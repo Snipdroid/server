@@ -41,7 +41,7 @@ struct IconPackVersionController: RouteCollection {
                 summary: "Get requests",
                 description: "Get requests for an icon pack version",
                 query: .all(of: .type(PageRequest.self), ["includingAdapted": .boolean]),
-                response: .type(Page<RequestRecordDTO>.self)
+                response: .type(Page<IconPackVersionRequestRecordResponse>.self)
             )
 
         version
@@ -129,7 +129,7 @@ struct IconPackVersionController: RouteCollection {
     }
 
     @Sendable
-    func requests(req: Request) async throws -> Page<RequestRecordDTO> {
+    func requests(req: Request) async throws -> Page<IconPackVersionRequestRecordResponse> {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
 
@@ -180,7 +180,12 @@ struct IconPackVersionController: RouteCollection {
         return
             try await query
             .paginate(for: req)
-            .map { $0.toDTO() }
+            .map { requestRecord in
+                let iconPackApp = try? requestRecord.joined(IconPackApp.self)
+                return IconPackVersionRequestRecordResponse(
+                    requestRecord: requestRecord.toDTO(), iconPackApp: iconPackApp?.toDTO()
+                )
+            }
     }
 
     @Sendable
