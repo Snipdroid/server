@@ -36,9 +36,9 @@ struct IconPackVersionController: RouteCollection {
             )
 
         version
-            .get("requests", use: requests)
+            .get("requests", use: requestsOfVersion)
             .openAPI(
-                summary: "Get requests",
+                summary: "Get requests of version",
                 description: "Get requests for an icon pack version",
                 query: .all(of: .type(PageRequest.self), ["includingAdapted": .boolean]),
                 response: .type(Page<IconPackVersionRequestRecordResponse>.self)
@@ -129,7 +129,8 @@ struct IconPackVersionController: RouteCollection {
     }
 
     @Sendable
-    func requests(req: Request) async throws -> Page<IconPackVersionRequestRecordResponse> {
+    func requestsOfVersion(req: Request) async throws -> Page<IconPackVersionRequestRecordResponse>
+    {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
 

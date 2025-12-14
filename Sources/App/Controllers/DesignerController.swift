@@ -42,7 +42,7 @@ struct DesignerController: RouteCollection {
         protected
             .get("requests", use: listRequest)
             .openAPI(
-                summary: "Get App Request Statistics",
+                summary: "Get App Request of Designer",
                 description:
                     "List all apps with request counts for the currently authenticated designer's icon packs, sorted by request count descending",
                 query: .type(PageRequest.self),
@@ -202,7 +202,7 @@ struct DesignerController: RouteCollection {
             guard let appInfo = appInfos.first(where: { $0.id == id }),
                 let count = countMap[id]
             else { return nil }
-            return AppInfoWithRequestCount(appInfo: appInfo.toDTO(), count: count)
+            return AppInfoWithRequestCount(appInfo: appInfo.toDTO(), iconPackApp: nil, count: count)
         }
 
         // Create and return the page
