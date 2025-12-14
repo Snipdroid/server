@@ -25,12 +25,14 @@ public func configure(_ app: Application) async throws {
     // app.queues.schedule(DailySummaryJob()).daily()
     // try app.queues.startInProcessJobs(on: .default)
 
-    if let awsEndpoint = Environment.get("AWS_ENDPOINT") {
+    if let awsPrivateEndpoint = Environment.get("AWS_PRIVATE_ENDPOINT") {
         app.aws.client = AWSClient(
             httpClient: app.http.client.shared
         )
-        app.aws.s3 = S3(client: app.aws.client, endpoint: awsEndpoint)
+        app.aws.s3 = S3(client: app.aws.client, endpoint: awsPrivateEndpoint)
     }
+
+    app.aws.s3PublicEndpoint = Environment.get("AWS_PUBLIC_ENDPOINT")
 
     guard let jwtSecret = Environment.get("JWT_SECRET") else {
         fatalError("JWT_SECRET environment variable is required")

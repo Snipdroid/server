@@ -62,3 +62,18 @@ extension Application.AWS {
         }
     }
 }
+
+extension Application.AWS {
+    struct S3PublicEndpoint: StorageKey {
+        typealias Value = String
+    }
+
+    public var s3PublicEndpoint: String? {
+        get {
+            return self.application.storage[S3PublicEndpoint.self]
+        }
+        nonmutating set {
+            self.application.storage[S3PublicEndpoint.self] = newValue
+        }
+    }
+}

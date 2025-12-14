@@ -34,7 +34,7 @@ struct AppIconController: RouteCollection {
     func redirect(req: Request) async throws -> Response {
         let packageName = try req.query.decode(AppIconRequest.self).packageName
 
-        let iconURL = try getIconURL(req: req, packageName: packageName)
+        let iconURL = try getIconURL(req: req, packageName: packageName, for: .download)
 
         let signedURL = try await req.aws.s3.signURL(
             url: iconURL, httpMethod: .GET, expires: .minutes(60))
@@ -74,7 +74,7 @@ struct AppIconController: RouteCollection {
         }
 
         // 2. Get the icon URL
-        let iconURL = try getIconURL(req: req, packageName: uploadRequest.packageName)
+        let iconURL = try getIconURL(req: req, packageName: uploadRequest.packageName, for: .upload)
 
         // 3. Sign the URL
         let signedURL = try await req.aws.s3.signURL(
@@ -83,8 +83,22 @@ struct AppIconController: RouteCollection {
         return .init(uploadURL: signedURL)
     }
 
-    private func getIconURL(req: Request, packageName: String) throws -> URL {
-        guard var components = URLComponents(string: req.aws.s3.endpoint)
+    fileprivate enum S3Operation {
+        case download
+        case upload
+    }
+
+    private func getIconURL(
+        req: Request, packageName: String, for operation: S3Operation = .download
+    ) throws
+        -> URL
+    {
+        let endpoint =
+            switch operation {
+            case .download: req.application.aws.s3PublicEndpoint ?? req.aws.s3.endpoint
+            case .upload: req.aws.s3.endpoint
+            }
+        guard var components = URLComponents(string: endpoint)
         else {
             throw InternalError.invalidUrl(URLComponents.self, req.aws.s3.endpoint)
         }
