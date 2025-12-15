@@ -21,9 +21,15 @@ struct LeafController: RouteCollection {
         let context = renderRequest.context
 
         let key = await LeafTemplateRepository.global.put(templateString)
-        let data = try await req.view.render(key, context).get().data
-        await LeafTemplateRepository.global.remove(key)
-
-        return .init(text: String(buffer: data))
+        do {
+            let data = try await req.view.render(key, context).get().data
+            await LeafTemplateRepository.global.remove(key)
+            return .init(text: String(buffer: data))
+        } catch {
+            throw Abort(
+                .badRequest,
+                reason: "Failed to render template, \(error.localizedDescription)"
+            )
+        }
     }
 }
