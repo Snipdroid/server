@@ -26,7 +26,8 @@ let package = Package(
         // 🚀 AWS SDK for Swift
         .package(url: "https://github.com/soto-project/soto.git", from: "7.0.0"),
         // Leaf
-        .package(url: "https://github.com/vapor/leaf.git", from: "4.4.0"),
+        //.package(url: "https://github.com/vapor/leaf.git", from: "4.4.0"),
+        .package(url: "https://github.com/Butanediol/leaf.git", branch: "main"),
         // 🚀 S3 file transfer for Soto
         // .package(url: "https://github.com/soto-project/soto-s3-file-transfer.git", from: "2.0.0")
     ],
