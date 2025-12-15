@@ -25,6 +25,8 @@ let package = Package(
         .package(url: "https://github.com/dioKaratzas/fluent-dto-macro.git", from: "1.1.1"),
         // 🚀 AWS SDK for Swift
         .package(url: "https://github.com/soto-project/soto.git", from: "7.0.0"),
+        // Leaf
+        .package(url: "https://github.com/vapor/leaf.git", from: "4.4.0"),
         // 🚀 S3 file transfer for Soto
         // .package(url: "https://github.com/soto-project/soto-s3-file-transfer.git", from: "2.0.0")
     ],
@@ -42,6 +44,7 @@ let package = Package(
                 .product(name: "SotoS3", package: "soto"),
                 .product(name: "VaporToOpenAPI", package: "VaporToOpenAPI"),
                 .product(name: "FluentDTOMacro", package: "fluent-dto-macro"),
+                .product(name: "Leaf", package: "leaf"),
             ],
             swiftSettings: swiftSettings
         ),

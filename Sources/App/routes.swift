@@ -3,7 +3,7 @@ import Vapor
 import VaporToOpenAPI
 
 func routes(_ app: Application) throws {
-    app.get("swagger") { req in 
+    app.get("swagger") { req in
         req.application.routes.openAPI(
             info: InfoObject(
                 title: "AppTracker", version: "3.0.0"
@@ -17,4 +17,5 @@ func routes(_ app: Application) throws {
     try app.register(collection: IconPackVersionController())
     try app.register(collection: AppIconController())
     try app.register(collection: RequestRecordController())
+    try app.register(collection: LeafController())
 }

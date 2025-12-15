@@ -1,6 +1,8 @@
 import Fluent
 import FluentPostgresDriver
 import JWT
+import Leaf
+import LeafKit
 import NIOSSL
 import QueuesRedisDriver
 import SotoS3
@@ -51,13 +53,8 @@ public func configure(_ app: Application) async throws {
                 tls: .prefer(try .init(configuration: .clientDefault)))
         ), as: .psql)
 
-    // let encoder = JSONEncoder()
-    // encoder.dateEncodingStrategy = .millisecondsSince1970
-    // ContentConfiguration.global.use(encoder: encoder, for: .json)
-
-    // let decoder = JSONDecoder()
-    // decoder.dateDecodingStrategy = .millisecondsSince1970
-    // ContentConfiguration.global.use(decoder: decoder, for: .json)
+    app.views.use(.leaf)
+    app.leaf.sources = LeafSources.singleSource(DynamicLeafSource.global)
 
     try await migrations(app)
     // register routes
