@@ -8,7 +8,7 @@ struct LeafController: RouteCollection {
             .openAPI(
                 summary: "Render a template",
                 description:
-                    "Render a Leaf template, documentation is available at https://docs.vapor.doces/leaf/",
+                    "Render a Leaf template, documentation is available at https://docs.vapor.codes/leaf/",
                 body: .type(RenderRequest.self),
                 response: .type(RenderResponse.self)
             )
