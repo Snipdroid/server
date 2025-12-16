@@ -1,5 +1,5 @@
 {
-  "originHash" : "0af53d3595fc4926bd1880fcb6dde2c4bfe11d19b1820bf7f667e10a04f5bc77",
+  "originHash" : "c08f4876098400fa103329155df28bbe648617cbc9917575c468c472068a5645",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -206,6 +206,15 @@
       "state" : {
         "revision" : "1a9ab0523fb742d9629558cede64290165c4285b",
         "version" : "3.33.2"
+      }
+    },
+    {
+      "identity" : "sql-kit-extras",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vapor-community/sql-kit-extras.git",
+      "state" : {
+        "revision" : "c86312462f0f44c93ff1e0028d76170744f02330",
+        "version" : "0.0.9"
       }
     },
     {

@@ -1,5 +1,6 @@
 import Fluent
 import SQLKit
+import SQLKitExtras
 import Vapor
 import VaporToOpenAPI
 
@@ -37,6 +38,14 @@ struct DesignerController: RouteCollection {
                 summary: "Sync Designer Profile",
                 description: "Fetch and update profile data from OIDC provider's userinfo endpoint",
                 response: .type(DesignerDTO.self)
+            )
+
+        protected
+            .get("statistics", use: getStatistics)
+            .openAPI(
+                summary: "Get Designer Statistics",
+                description: "Get statistics for the currently authenticated designer",
+                response: .type(DesignerStatisticsResponse.self)
             )
 
         protected
@@ -215,4 +224,70 @@ struct DesignerController: RouteCollection {
             )
         )
     }
+
+    @Sendable
+    func getStatistics(req: Request) async throws -> DesignerStatisticsResponse {
+        let designer = try req.auth.require(Designer.self)
+        let designerID = try designer.requireID()
+
+        return try await req.db.transaction { transactionalDatabase in
+            guard let db = transactionalDatabase as? any SQLDatabase else {
+                throw Abort(.internalServerError, reason: "Database does not support SQL")
+            }
+
+            let requestCount =
+                try await db.select()
+                .column(SQLFunction("COUNT", args: RequestRecord.sqlColumn(for: \.$id)))
+                .from(RequestRecord.schema)
+                .join(
+                    IconPackVersion.schema,
+                    on: RequestRecord.sqlColumn(for: \.$iconPackVersion.$id),
+                    .equal,
+                    IconPackVersion.sqlColumn(for: \.$id)
+                )
+                .join(
+                    IconPack.schema,
+                    on: IconPackVersion.sqlColumn(for: \.$iconPack.$id),
+                    .equal,
+                    IconPack.sqlColumn(for: \.$id)
+                )
+                .where(
+                    IconPack.sqlColumn(for: \.$designer.$id), .equal, SQLBind(designerID)
+                )
+                .first(decoding: Int.self) ?? -1
+
+            let distinctRequestCount =
+                try await db.select()
+                .column(SQLFunction("COUNT", args: SQLLiteral.all))
+                .from(
+                    db.select()
+                        .column(RequestRecord.sqlColumn(for: \.$appInfo.$id))
+                        .column(IconPack.sqlColumn(for: \.$id))
+                        .from(RequestRecord.schema)
+                        .join(
+                            IconPackVersion.schema,
+                            on: RequestRecord.sqlColumn(for: \.$iconPackVersion.$id),
+                            .equal,
+                            IconPackVersion.sqlColumn(for: \.$id)
+                        )
+                        .join(
+                            IconPack.schema,
+                            on: IconPackVersion.sqlColumn(for: \.$iconPack.$id),
+                            .equal,
+                            IconPack.sqlColumn(for: \.$id)
+                        )
+                        .where(
+                            IconPack.sqlColumn(for: \.$designer.$id), .equal, SQLBind(designerID)
+                        )
+                        .groupBy(RequestRecord.sqlColumn(for: \.$appInfo.$id))
+                        .groupBy(IconPack.sqlColumn(for: \.$id))
+                        .query
+                )
+                .first(decoding: Int.self) ?? -1
+
+            return DesignerStatisticsResponse(
+                requestCount: requestCount, distinctRequestCount: distinctRequestCount)
+        }
+    }
+
 }
