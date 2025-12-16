@@ -176,8 +176,11 @@ struct AppInfoController: RouteCollection {
         try await newAppInfos.create(on: req.db)
 
         // 5. Build complete lookup map for all AppInfos (existing + new)
-        let allAppInfosMap = (existingAppInfos + newAppInfos).reduce(into: existingMap) { result, appInfo in
-            result[AppInfoKey(packageName: appInfo.packageName, mainActivity: appInfo.mainActivity)] = appInfo
+        let allAppInfosMap = (existingAppInfos + newAppInfos).reduce(into: existingMap) {
+            result, appInfo in
+            result[
+                AppInfoKey(packageName: appInfo.packageName, mainActivity: appInfo.mainActivity)] =
+                appInfo
         }
 
         // 6. Batch query existing localized names
@@ -190,20 +193,25 @@ struct AppInfoController: RouteCollection {
             }
 
         // 7. Prepare new localized names and updates by looking up AppInfo by key
-        let (newLocalizedNames, localizedNamesToUpdate) = creates.reduce(into: ([AppLocalizedName](), [AppLocalizedName]())) { result, create in
+        let (newLocalizedNames, localizedNamesToUpdate) = creates.reduce(
+            into: ([AppLocalizedName](), [AppLocalizedName]())
+        ) { result, create in
             let key = AppInfoKey(packageName: create.packageName, mainActivity: create.mainActivity)
-            guard let appInfo = allAppInfosMap[key], let appInfoId = try? appInfo.requireID() else { return }
+            guard let appInfo = allAppInfosMap[key], let appInfoId = try? appInfo.requireID() else {
+                return
+            }
 
             if let existingName = existingLocalizedNamesMap[appInfoId]?[create.languageCode] {
                 existingName.name = create.localizedName
                 result.1.append(existingName)
             } else {
-                result.0.append(AppLocalizedName(
-                    appInfoId: appInfoId,
-                    languageCode: create.languageCode,
-                    name: create.localizedName,
-                    isPrimary: false
-                ))
+                result.0.append(
+                    AppLocalizedName(
+                        appInfoId: appInfoId,
+                        languageCode: create.languageCode,
+                        name: create.localizedName,
+                        isPrimary: false
+                    ))
             }
         }
 
@@ -219,7 +227,9 @@ struct AppInfoController: RouteCollection {
         let requestRecords = creates.compactMap { create -> RequestRecord? in
             let key = AppInfoKey(packageName: create.packageName, mainActivity: create.mainActivity)
             guard let appInfoId = try? allAppInfosMap[key]?.requireID() else { return nil }
-            return RequestRecord(appInfoId: appInfoId, iconPackVersionId: iconPackVersionId)
+            return RequestRecord(
+                appInfoId: appInfoId, iconPackVersionId: iconPackVersionId,
+                isSystemApp: create.systemApp)
         }
         try await requestRecords.create(on: req.db)
 

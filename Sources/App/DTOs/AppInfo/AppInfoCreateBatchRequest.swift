@@ -20,6 +20,9 @@ struct AppInfoCreateSingleRequest: Content, Hashable {
     /// Android main activity class name (e.g., "com.google.android.maps.MapsActivity")
     let mainActivity: String
 
+    /// Whether this app is a system app on user's device
+    var systemApp: Bool? = false
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(packageName)
         hasher.combine(mainActivity)

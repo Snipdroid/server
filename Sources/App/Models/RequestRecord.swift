@@ -26,12 +26,16 @@ final class RequestRecord: Model, @unchecked Sendable {
     @OptionalParent(key: "icon_pack_version_id")
     var iconPackVersion: IconPackVersion?
 
+    @Field(key: "is_system_app")
+    var isSystemApp: Bool?
+
     init() {}
 
-    init(id: UUID? = nil, appInfoId: UUID, iconPackVersionId: UUID?) {
+    init(id: UUID? = nil, appInfoId: UUID, iconPackVersionId: UUID?, isSystemApp: Bool? = nil) {
         self.id = id
         self.$appInfo.id = appInfoId
         self.$iconPackVersion.id = iconPackVersionId
+        self.isSystemApp = isSystemApp
     }
 }
 
@@ -49,6 +53,7 @@ struct CreateRequestRecord: AsyncMigration {
             )
             .field("created_at", .datetime)
             .field("deleted_at", .datetime)
+            .field("is_system_app", .bool)
             .create()
     }
 
