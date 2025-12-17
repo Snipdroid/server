@@ -1,5 +1,6 @@
 import Fluent
 import SQLKit
+import SQLKitExtras
 import Vapor
 import VaporToOpenAPI
 
@@ -287,47 +288,47 @@ struct IconPackController: RouteCollection {
             db
             .select()
             .column(
-                SQLFunction("COUNT", args: SQLDistinct(SQLColumn("id", table: AppInfo.schema))),
+                SQLFunction("COUNT", args: SQLDistinct(AppInfo.sqlColumn(for: \.$id))),
                 as: "count"
             )
             .from(RequestRecord.schema)
             .join(
                 AppInfo.schema,
-                on: SQLColumn("app_info_id", table: RequestRecord.schema),
+                on: RequestRecord.sqlColumn(for: \.$appInfo.$id),
                 .equal,
-                SQLColumn("id", table: AppInfo.schema)
+                AppInfo.sqlColumn(for: \.$id)
             )
             .join(
                 IconPackVersion.schema,
-                on: SQLColumn("icon_pack_version_id", table: RequestRecord.schema),
+                on: RequestRecord.sqlColumn(for: \.$iconPackVersion.$id),
                 .equal,
-                SQLColumn("id", table: IconPackVersion.schema)
+                IconPackVersion.sqlColumn(for: \.$id)
             )
             .join(
                 IconPackApp.schema,
                 method: .left,
                 on: SQLBinaryExpression(
                     left: SQLBinaryExpression(
-                        left: SQLColumn("id", table: AppInfo.schema),
+                        left: AppInfo.sqlColumn(for: \.$id),
                         op: SQLBinaryOperator.equal,
-                        right: SQLColumn("app_info_id", table: IconPackApp.schema)
+                        right: IconPackApp.sqlColumn(for: \.$appInfo.$id)
                     ),
                     op: SQLBinaryOperator.and,
                     right: SQLBinaryExpression(
-                        left: SQLColumn("icon_pack_id", table: IconPackApp.schema),
+                        left: IconPackApp.sqlColumn(for: \.$iconPack.$id),
                         op: SQLBinaryOperator.equal,
                         right: SQLBind(iconPackId)
                     )
                 )
             )
             .where(
-                SQLColumn("icon_pack_id", table: IconPackVersion.schema), .equal,
+                IconPackVersion.sqlColumn(for: \.$iconPack.$id), .equal,
                 SQLBind(iconPackId)
             )
 
         if !includingAdapted {
             countQuery = countQuery.where(
-                SQLColumn("id", table: IconPackApp.schema), .is, SQLLiteral.null)
+                IconPackApp.sqlColumn(for: \.$id), .is, SQLLiteral.null)
         }
 
         let totalCountRows = try await countQuery.all()
@@ -341,60 +342,60 @@ struct IconPackController: RouteCollection {
         var dataQuery =
             db
             .select()
-            .column(SQLColumn("id", table: AppInfo.schema), as: "appInfoId")
+            .column(AppInfo.sqlColumn(for: \.$id), as: "appInfoId")
             .column(
-                SQLFunction("COUNT", args: SQLColumn("id", table: RequestRecord.schema)),
+                SQLFunction("COUNT", args: RequestRecord.sqlColumn(for: \.$id)),
                 as: "count"
             )
-            .column(SQLColumn("id", table: IconPackApp.schema), as: "iconPackAppId")
+            .column(IconPackApp.sqlColumn(for: \.$id), as: "iconPackAppId")
             .from(RequestRecord.schema)
             .join(
                 AppInfo.schema,
-                on: SQLColumn("app_info_id", table: RequestRecord.schema),
+                on: RequestRecord.sqlColumn(for: \.$appInfo.$id),
                 .equal,
-                SQLColumn("id", table: AppInfo.schema)
+                AppInfo.sqlColumn(for: \.$id)
             )
             .join(
                 IconPackVersion.schema,
-                on: SQLColumn("icon_pack_version_id", table: RequestRecord.schema),
+                on: RequestRecord.sqlColumn(for: \.$iconPackVersion.$id),
                 .equal,
-                SQLColumn("id", table: IconPackVersion.schema)
+                IconPackVersion.sqlColumn(for: \.$id)
             )
             .join(
                 IconPackApp.schema,
                 method: .left,
                 on: SQLBinaryExpression(
                     left: SQLBinaryExpression(
-                        left: SQLColumn("id", table: AppInfo.schema),
+                        left: AppInfo.sqlColumn(for: \.$id),
                         op: SQLBinaryOperator.equal,
-                        right: SQLColumn("app_info_id", table: IconPackApp.schema)
+                        right: IconPackApp.sqlColumn(for: \.$appInfo.$id)
                     ),
                     op: SQLBinaryOperator.and,
                     right: SQLBinaryExpression(
-                        left: SQLColumn("icon_pack_id", table: IconPackApp.schema),
+                        left: IconPackApp.sqlColumn(for: \.$iconPack.$id),
                         op: SQLBinaryOperator.equal,
                         right: SQLBind(iconPackId)
                     )
                 )
             )
             .where(
-                SQLColumn("icon_pack_id", table: IconPackVersion.schema), .equal,
+                IconPackVersion.sqlColumn(for: \.$iconPack.$id), .equal,
                 SQLBind(iconPackId)
             )
 
         if !includingAdapted {
             dataQuery = dataQuery.where(
-                SQLColumn("id", table: IconPackApp.schema), .is, SQLLiteral.null)
+                IconPackApp.sqlColumn(for: \.$id), .is, SQLLiteral.null)
         }
 
         let queryResults =
             try await dataQuery
-            .groupBy(SQLColumn("id", table: AppInfo.schema))
-            .groupBy(SQLColumn("id", table: IconPackApp.schema))
+            .groupBy(AppInfo.sqlColumn(for: \.$id))
+            .groupBy(IconPackApp.sqlColumn(for: \.$id))
             .orderBy(
                 SQLOrderBy(
                     expression: SQLFunction(
-                        "COUNT", args: SQLColumn("id", table: RequestRecord.schema)),
+                        "COUNT", args: RequestRecord.sqlColumn(for: \.$id)),
                     direction: SQLDirection.descending
                 )
             )
