@@ -39,6 +39,13 @@ struct AppInfoController: RouteCollection {
                 body: .type(AppInfoTagRequest.self),
                 response: .type(AppInfoDTO.self)
             )
+
+        appInfo.get(":appInfoID", "tags", use: getAppInfoTags)
+            .openAPI(
+                summary: "Get tags for an app",
+                description: "Get tags for an app.",
+                response: .type([TagDTO].self)
+            )
     }
 
     @Sendable
@@ -340,5 +347,23 @@ struct AppInfoController: RouteCollection {
 
             return appInfo.toDTO()
         }
+    }
+
+    @Sendable
+    func getAppInfoTags(req: Request) async throws -> [TagDTO] {
+        guard let appInfoId = req.parameters.get("appInfoID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "Invalid app info ID")
+        }
+
+        guard
+            let appInfo = try await AppInfo.query(on: req.db)
+                .filter(\.$id == appInfoId)
+                .with(\.$tags)
+                .first()
+        else {
+            throw Abort(.notFound, reason: "App not found")
+        }
+
+        return appInfo.tags.map { $0.toDTO() }
     }
 }
