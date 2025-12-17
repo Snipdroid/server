@@ -51,7 +51,15 @@ struct AppInfoController: RouteCollection {
     @Sendable
     func search(req: Request) async throws -> Page<AppInfoDTO> {
         let query = try req.query.decode(AppInfoQueryRequest.self)
-        let sortBy = (query.query?.isEmpty == true) ? .count : (query.sortBy ?? .count)
+        let sortBy: SortOption =
+            switch (query.query, query.sortBy) {
+            case (.none, _):
+                .count
+            case (.some(let query), .none):
+                query.isEmpty ? .count : .relevance
+            case (.some, .some(let sortBy)):
+                sortBy
+            }
 
         // Branch on sortBy: relevance uses SQLKit, count uses existing Fluent
         switch sortBy {
