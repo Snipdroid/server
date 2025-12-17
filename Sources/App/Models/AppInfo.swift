@@ -36,6 +36,9 @@ final class AppInfo: Model, Content, @unchecked Sendable {
     @Siblings(through: IconPackApp.self, from: \.$appInfo, to: \.$iconPack)
     var iconPacks: [IconPack]
 
+    @Siblings(through: AppInfoTag.self, from: \.$appInfo, to: \.$tag)
+    var tags: [Tag]
+
     init() {}
 
     init(
@@ -49,6 +52,8 @@ final class AppInfo: Model, Content, @unchecked Sendable {
         self.count = count
     }
 }
+
+extension AppInfoDTO: Content {}
 
 struct CreateAppInfo: AsyncMigration {
     func prepare(on database: Database) async throws {

@@ -72,4 +72,6 @@ public func migrations(_ app: Application) async throws {
     app.migrations.add(CreateTrigger())
     app.migrations.add(CreateDailySummary())
     app.migrations.add(CreateIconPackApp())
+    app.migrations.add(CreateTag())
+    app.migrations.add(CreateAppInfoTag())
 }

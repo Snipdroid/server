@@ -15,14 +15,24 @@ struct AppInfoQueryRequest: Content {
     /// Filter by main activity (uses ILIKE matching)
     let byMainActivity: String?
 
-    /// Sort order for results
+    /// Sort order for results, either "relevance" or "count"
     let sortBy: SortOption?
 
-    @OpenAPIDescriptable
-    enum SortOption: String, Content, CaseIterable {
-        /// Sort by similarity/relevance score first, then by count
-        case relevance
-        /// Sort by popularity (request count) first (default)
-        case count
+}
+
+enum SortOption: String, Content, CaseIterable, OpenAPIType {
+    case relevance
+    case count
+
+    static var openAPISchema: SchemaObject {
+        SchemaObject(
+            description: """
+                Sort options for query results:
+                • relevance - Sort by similarity/relevance score first, then by count
+                • count - Sort by popularity (request count) first (default)
+                """,
+            enum: allCases.map { AnyValue.string($0.rawValue) },
+            context: .string
+        )
     }
 }

@@ -1,6 +1,11 @@
 import Foundation
+import VaporToOpenAPI
 
-enum JSONValue: Codable, Sendable {
+enum JSONValue: Codable, Sendable, OpenAPIType {
+    static var openAPISchema: SchemaObject {
+        SchemaObject(description: "Any valid JSON")
+    }
+
     case string(String)
     case number(Double)
     case bool(Bool)

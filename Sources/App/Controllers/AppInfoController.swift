@@ -13,7 +13,7 @@ struct AppInfoController: RouteCollection {
                 summary: "Search for apps",
                 description:
                     "Search for apps using a simple query or advanced filters. The `query` parameter searches across name, package name, and main activity. Advanced filters (byName, byPackageName, byMainActivity) can be combined with query using AND logic. Use `sortBy` to control result ordering.",
-                query: .type(AppInfoQueryRequest.self),
+                query: .all(of: .type(AppInfoQueryRequest.self), .type(PageRequest.self)),
                 response: .type(Page<AppInfoDTO>.self)
             )
 
@@ -29,6 +29,15 @@ struct AppInfoController: RouteCollection {
                     """,
                 body: .type(Set<AppInfoCreateSingleRequest>.self),
                 response: .type([AppInfoDTO].self)
+            )
+
+        appInfo.grouped(OIDCAuthenticator(), EnsureCuratorMiddleware())
+            .post(":appInfoID", "tag", use: tagAppInfo)
+            .openAPI(
+                summary: "Tag an app",
+                description: "Add or remove a tag to an app.",
+                body: .type(AppInfoTagRequest.self),
+                response: .type(AppInfoDTO.self)
             )
     }
 
@@ -289,5 +298,47 @@ struct AppInfoController: RouteCollection {
         try await newRequestRecord.save(on: req.db)
 
         return appInfo.toDTO()
+    }
+
+    @Sendable
+    func tagAppInfo(req: Request) async throws -> AppInfoDTO {
+        let designer = try req.auth.require(Designer.self)
+        let designerID = try designer.requireID()
+        let taggingRequest = try req.content.decode(AppInfoTagRequest.self)
+
+        guard let appInfoId = req.parameters.get("appInfoID", as: UUID.self) else {
+            throw Abort(.badRequest)
+        }
+
+        return try await req.db.transaction { transactionalDatabase in
+            guard
+                let appInfo = try await AppInfo.query(on: transactionalDatabase)
+                    .filter(\.$id == appInfoId)
+                    .first()
+            else {
+                throw Abort(.notFound, reason: "App not found")
+            }
+
+            guard
+                let tag =
+                    try await Tag
+                    .query(on: transactionalDatabase)
+                    .filter(\.$id == taggingRequest.tagID)
+                    .first()
+            else {
+                throw Abort(.notFound, reason: "Tag not found")
+            }
+
+            if taggingRequest.remove {
+                try await appInfo.$tags.detach(tag, on: transactionalDatabase)
+            } else {
+                try await appInfo.$tags.attach(tag, method: .ifNotExists, on: transactionalDatabase)
+                {
+                    $0.$createdBy.id = designerID
+                }
+            }
+
+            return appInfo.toDTO()
+        }
     }
 }
