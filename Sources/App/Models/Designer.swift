@@ -75,7 +75,7 @@ struct CreateDesigner: AsyncMigration {
     }
 }
 
-enum DesignerRole: Int, Codable {
+public enum DesignerRole: Int, Codable, Sendable {
     case regular = 0
     case admin, curator
 }
