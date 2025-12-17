@@ -53,16 +53,26 @@ struct AppInfoController: RouteCollection {
         let query = try req.query.decode(AppInfoQueryRequest.self)
         let sortBy = query.sortBy ?? .count
 
+        // Branch on sortBy: relevance uses SQLKit, count uses existing Fluent
+        switch sortBy {
+        case .relevance:
+            return try await searchWithRelevance(req: req, query: query)
+        case .count:
+            return try await searchWithCount(req: req, query: query)
+        }
+    }
+
+    @Sendable
+    private func searchWithCount(
+        req: Request,
+        query: AppInfoQueryRequest
+    ) async throws -> Page<AppInfoDTO> {
+        // Keep existing Fluent implementation for count-based sorting
         var queryBuilder: QueryBuilder<AppInfo> = AppInfo.query(on: req.db)
             .with(\.$localizedNames)
 
-        // Track search term for relevance sorting
-        var searchTerm: String? = nil
-
         // Step 1: Handle unified `query` parameter (searches all fields)
         if let simpleQuery = query.query, !simpleQuery.isEmpty {
-            searchTerm = simpleQuery
-
             // Search across localized names
             let nameMatchIds = try await AppLocalizedName.query(on: req.db)
                 .filter(\.$name, .custom("ILIKE"), "%\(simpleQuery)%")
@@ -94,16 +104,8 @@ struct AppInfoController: RouteCollection {
 
         // Step 2: Apply advanced filters (AND logic on top of query results)
         if let byName = query.byName, !byName.isEmpty {
-            searchTerm = searchTerm ?? byName
-
             let appInfoIds = try await AppLocalizedName.query(on: req.db)
                 .filter(\.$name, .custom("ILIKE"), "%\(byName)%")
-                .sort(
-                    .sql(
-                        embed:
-                            "similarity(\(idents: ["app_localized_names", "name"], joinedBy: "."), \(bind: byName)) DESC"
-                    )
-                )
                 .all()
                 .uniqued(on: \.$appInfo.id)
                 .map(\.$appInfo.id)
@@ -112,41 +114,228 @@ struct AppInfoController: RouteCollection {
         }
 
         if let byPackageName = query.byPackageName, !byPackageName.isEmpty {
-            searchTerm = searchTerm ?? byPackageName
             queryBuilder = queryBuilder.filter(
                 \.$packageName, .custom("ILIKE"), "%\(byPackageName)%")
         }
 
         if let byMainActivity = query.byMainActivity, !byMainActivity.isEmpty {
-            searchTerm = searchTerm ?? byMainActivity
             queryBuilder = queryBuilder.filter(
                 \.$mainActivity, .custom("ILIKE"), "%\(byMainActivity)%")
         }
 
-        // Step 3: Apply sorting
-        switch sortBy {
-        case .relevance:
-            if let term = searchTerm {
-                // Sort by similarity to search term, then by count
-                queryBuilder =
-                    queryBuilder
-                    .sort(
-                        .sql(
-                            embed:
-                                "GREATEST(similarity(package_name, \(bind: term)), similarity(main_activity, \(bind: term))) DESC"
-                        )
-                    )
-                    .sort(\.$count, .descending)
-            } else {
-                // No search term, fall back to count
-                queryBuilder = queryBuilder.sort(\.$count, .descending)
-            }
-        case .count:
-            queryBuilder = queryBuilder.sort(\.$count, .descending)
-        }
+        // Sort by count
+        queryBuilder = queryBuilder.sort(\.$count, .descending)
 
         let page = try await queryBuilder.paginate(for: req)
         return page.map { $0.toDTO() }
+    }
+
+    @Sendable
+    private func searchWithRelevance(
+        req: Request,
+        query: AppInfoQueryRequest
+    ) async throws -> Page<AppInfoDTO> {
+        // SQLKit-based relevance search
+        guard let db = req.db as? any SQLDatabase else {
+            throw Abort(.internalServerError, reason: "Database does not support SQL")
+        }
+
+        // Extract and process search terms
+        var searchTerms: [String] = []
+        var fullSearchQuery: String = ""
+
+        if let simpleQuery = query.query, !simpleQuery.isEmpty {
+            fullSearchQuery = simpleQuery
+            searchTerms =
+                simpleQuery
+                .split(separator: " ")
+                .map(String.init)
+                .filter { !$0.isEmpty }
+        }
+
+        // Early return if no search terms
+        guard !searchTerms.isEmpty else {
+            return Page(items: [], metadata: PageMetadata(page: 1, per: 20, total: 0))
+        }
+
+        // Helper function to build WHERE clause with OR logic across search terms
+        func addSearchTermConditions(
+            _ dataQuery: SQLSelectBuilder,
+            terms: [String]
+        ) -> SQLSelectBuilder {
+
+            let columns: [SQLColumn] = [
+                AppInfo.sqlColumn(for: \.$defaultName),
+                AppInfo.sqlColumn(for: \.$packageName),
+                AppInfo.sqlColumn(for: \.$mainActivity),
+                AppLocalizedName.sqlColumn(for: \.$name),
+            ]
+
+            let conditions: [SQLExpression] =
+                terms
+                .map { "%\($0)%" }
+                .flatMap { pattern in
+                    columns.map {
+                        SQLBinaryExpression(
+                            left: $0,
+                            op: SQLRaw("ILIKE"),
+                            right: SQLBind(pattern)
+                        )
+                    }
+                }
+
+            guard let first = conditions.first else { return dataQuery }
+
+            let combined = conditions.dropFirst().reduce(first) { acc, next in
+                SQLBinaryExpression(left: acc, op: SQLBinaryOperator.or, right: next)
+            }
+
+            return dataQuery.where(combined)
+        }
+
+        // Build relevance scoring expression
+        func buildRelevanceExpression(
+            for column: SQLColumn
+        ) -> SQLFunction {
+            SQLFunction(
+                "COALESCE",
+                args: [
+                    SQLFunction(
+                        "similarity",
+                        args: [
+                            column,
+                            SQLBind(fullSearchQuery),
+                        ]),
+                    SQLLiteral.numeric("0"),
+                ]
+            )
+        }
+
+        let relevanceScore = SQLFunction(
+            "MAX",
+            args: [
+                SQLFunction(
+                    "GREATEST",
+                    args: [
+                        AppInfo.sqlColumn(for: \.$defaultName),
+                        AppInfo.sqlColumn(for: \.$packageName),
+                        AppInfo.sqlColumn(for: \.$mainActivity),
+                        AppLocalizedName.sqlColumn(for: \.$name),
+                    ].map(buildRelevanceExpression))
+            ]
+        )
+
+        // Pagination
+        let paginationRequest = try req.query.decode(PageRequest.self)
+        let page = paginationRequest.page
+        let per = paginationRequest.per
+        let offset = (page - 1) * per
+
+        // Build single query with window function
+        var dataQuery =
+            db
+            .select()
+            .column(AppInfo.sqlColumn(for: \.$id), as: "app_info_id")
+            .column(
+                SQLRaw("COUNT(*) OVER()"),  // Window function for total count
+                as: "total_count"
+            )
+            .from(AppInfo.schema)
+            .join(
+                AppLocalizedName.self,
+                method: .left,
+                on: AppLocalizedName.sqlColumn(for: \.$appInfo.$id),
+                .equal,
+                AppInfo.sqlColumn(for: \.$id)
+            )
+
+        // Add advanced filters FIRST (performance optimization)
+        if let byName = query.byName, !byName.isEmpty {
+            dataQuery = dataQuery.where(
+                SQLBinaryExpression(
+                    left: AppLocalizedName.sqlColumn(for: \.$name),
+                    op: SQLRaw("ILIKE"),
+                    right: SQLBind("%\(byName)%")
+                )
+            )
+        }
+
+        if let byPackageName = query.byPackageName, !byPackageName.isEmpty {
+            dataQuery = dataQuery.where(
+                SQLBinaryExpression(
+                    left: AppInfo.sqlColumn(for: \.$packageName),
+                    op: SQLRaw("ILIKE"),
+                    right: SQLBind("%\(byPackageName)%")
+                )
+            )
+        }
+
+        if let byMainActivity = query.byMainActivity, !byMainActivity.isEmpty {
+            dataQuery = dataQuery.where(
+                SQLBinaryExpression(
+                    left: AppInfo.sqlColumn(for: \.$mainActivity),
+                    op: SQLRaw("ILIKE"),
+                    right: SQLBind("%\(byMainActivity)%")
+                )
+            )
+        }
+
+        // Add search term conditions
+        dataQuery = addSearchTermConditions(dataQuery, terms: searchTerms)
+
+        let queryResults =
+            try await dataQuery
+            .groupBy(AppInfo.sqlColumn(for: \.$id))
+            .orderBy(SQLOrderBy(expression: relevanceScore, direction: SQLDirection.descending))
+            .orderBy(
+                SQLOrderBy(
+                    expression: AppInfo.sqlColumn(for: \.$count), direction: SQLDirection.descending
+                )
+            )
+            .limit(per)
+            .offset(offset)
+            .all()
+
+        // Extract ordered IDs and total count
+        var total = 0
+        let appInfoIds: [UUID] = queryResults.compactMap { row in
+            // Extract total from first row (all rows have same value due to window function)
+            if total == 0, let rowTotal = try? row.decode(column: "total_count", as: Int.self) {
+                total = rowTotal
+            }
+            return try? row.decode(column: "app_info_id", as: UUID.self)
+        }
+
+        // Early return if no results
+        guard !appInfoIds.isEmpty else {
+            return Page(items: [], metadata: PageMetadata(page: page, per: per, total: 0))
+        }
+
+        // Query full AppInfo entities with relations
+        let appInfos = try await AppInfo.query(on: req.db)
+            .filter(\.$id ~~ appInfoIds)
+            .with(\.$localizedNames)
+            .all()
+
+        // Create lookup map
+        let appInfoMap: [UUID: AppInfo] = Dictionary(
+            uniqueKeysWithValues: appInfos.compactMap { appInfo in
+                guard let id = appInfo.id else { return nil }
+                return (id, appInfo)
+            }
+        )
+
+        // Maintain SQL result order
+        let orderedAppInfos = appInfoIds.compactMap { appInfoMap[$0] }
+
+        // Convert to DTOs
+        let dtos = orderedAppInfos.map { $0.toDTO() }
+
+        // Return paginated response
+        return Page(
+            items: dtos,
+            metadata: PageMetadata(page: page, per: per, total: total)
+        )
     }
 
     @Sendable
