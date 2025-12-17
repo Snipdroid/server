@@ -237,7 +237,10 @@ struct DesignerController: RouteCollection {
 
             let requestCount =
                 try await db.select()
-                .column(SQLFunction("COUNT", args: RequestRecord.sqlColumn(for: \.$id)))
+                .column(
+                    SQLFunction("COUNT", args: RequestRecord.sqlColumn(for: \.$id)),
+                    as: "count"
+                )
                 .from(RequestRecord.schema)
                 .join(
                     IconPackVersion.schema,
@@ -254,36 +257,43 @@ struct DesignerController: RouteCollection {
                 .where(
                     IconPack.sqlColumn(for: \.$designer.$id), .equal, SQLBind(designerID)
                 )
-                .first(decoding: Int.self) ?? -1
+                .first(decodingColumn: "count", as: Int.self) ?? -1
 
             let distinctRequestCount =
                 try await db.select()
-                .column(SQLFunction("COUNT", args: SQLLiteral.all))
-                .from(
-                    db.select()
-                        .column(RequestRecord.sqlColumn(for: \.$appInfo.$id))
-                        .column(IconPack.sqlColumn(for: \.$id))
-                        .from(RequestRecord.schema)
-                        .join(
-                            IconPackVersion.schema,
-                            on: RequestRecord.sqlColumn(for: \.$iconPackVersion.$id),
-                            .equal,
-                            IconPackVersion.sqlColumn(for: \.$id)
-                        )
-                        .join(
-                            IconPack.schema,
-                            on: IconPackVersion.sqlColumn(for: \.$iconPack.$id),
-                            .equal,
-                            IconPack.sqlColumn(for: \.$id)
-                        )
-                        .where(
-                            IconPack.sqlColumn(for: \.$designer.$id), .equal, SQLBind(designerID)
-                        )
-                        .groupBy(RequestRecord.sqlColumn(for: \.$appInfo.$id))
-                        .groupBy(IconPack.sqlColumn(for: \.$id))
-                        .query
+                .column(
+                    SQLFunction("COUNT", args: SQLLiteral.all),
+                    as: "count"
                 )
-                .first(decoding: Int.self) ?? -1
+                .from(
+                    SQLGroupExpression(
+                        db.select()
+                            .column(RequestRecord.sqlColumn(for: \.$appInfo.$id))
+                            .column(IconPack.sqlColumn(for: \.$id))
+                            .from(RequestRecord.schema)
+                            .join(
+                                IconPackVersion.schema,
+                                on: RequestRecord.sqlColumn(for: \.$iconPackVersion.$id),
+                                .equal,
+                                IconPackVersion.sqlColumn(for: \.$id)
+                            )
+                            .join(
+                                IconPack.schema,
+                                on: IconPackVersion.sqlColumn(for: \.$iconPack.$id),
+                                .equal,
+                                IconPack.sqlColumn(for: \.$id)
+                            )
+                            .where(
+                                IconPack.sqlColumn(for: \.$designer.$id), .equal,
+                                SQLBind(designerID)
+                            )
+                            .groupBy(RequestRecord.sqlColumn(for: \.$appInfo.$id))
+                            .groupBy(IconPack.sqlColumn(for: \.$id))
+                            .query
+                    )
+
+                )
+                .first(decodingColumn: "count", as: Int.self) ?? -1
 
             return DesignerStatisticsResponse(
                 requestCount: requestCount, distinctRequestCount: distinctRequestCount)
