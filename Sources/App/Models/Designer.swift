@@ -36,6 +36,9 @@ final class Designer: Model, Authenticatable, @unchecked Sendable {
     @Timestamp(key: "updated_at", on: .update)
     var updatedAt: Date?
 
+    @Field(key: "role")
+    var role: DesignerRole
+
     init() {}
 
     init(
@@ -62,6 +65,7 @@ struct CreateDesigner: AsyncMigration {
             .field("name", .string)
             .field("created_at", .datetime)
             .field("updated_at", .datetime)
+            .field("role", .int, .required, .sql(.default(DesignerRole.regular.rawValue)))
             .unique(on: "oidc_subject", "oidc_issuer")
             .create()
     }
@@ -69,4 +73,9 @@ struct CreateDesigner: AsyncMigration {
     func revert(on database: Database) async throws {
         try await database.schema(Designer.schema).delete()
     }
+}
+
+enum DesignerRole: Int, Codable {
+    case regular = 0
+    case admin, curator
 }
