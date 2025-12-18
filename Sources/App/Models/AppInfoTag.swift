@@ -47,6 +47,7 @@ struct CreateAppInfoTag: AsyncMigration {
 				AppInfoTag.fieldKey(for: \.$createdBy), .uuid, .required,
 				.references(Designer.schema, .id, onDelete: .cascade)
 			)
+			.field(AppInfoTag.fieldKey(for: \.$createdAt), .datetime)
 			.create()
 
 		#warning(
