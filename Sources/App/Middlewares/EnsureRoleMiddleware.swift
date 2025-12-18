@@ -1,9 +1,15 @@
 import Vapor
 
-struct EnsureCuratorMiddleware: AsyncMiddleware {
+struct EnsureRoleMiddleware: AsyncMiddleware {
+    init(_ roles: DesignerRole...) {
+        self.roles = roles
+    }
+
+    private let roles: [DesignerRole]
+
     func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
         guard let designer = request.auth.get(Designer.self),
-            [.admin, .curator].contains(designer.role)
+            roles.contains(designer.role)
         else {
             throw Abort(.unauthorized)
         }

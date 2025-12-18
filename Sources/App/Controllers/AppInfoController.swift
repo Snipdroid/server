@@ -31,7 +31,7 @@ struct AppInfoController: RouteCollection {
                 response: .type([AppInfoDTO].self)
             )
 
-        appInfo.grouped(OIDCAuthenticator(), EnsureCuratorMiddleware())
+        appInfo.grouped(OIDCAuthenticator(), EnsureRoleMiddleware(.admin, .curator))
             .post(":appInfoID", "tag", use: tagAppInfo)
             .openAPI(
                 summary: "Tag an app",
