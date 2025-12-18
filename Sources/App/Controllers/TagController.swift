@@ -7,6 +7,12 @@ struct TagController: RouteCollection {
 		let tags = routes.grouped("tags")
 
 		tags.get(use: listTags)
+			.openAPI(
+				summary: "List all tags",
+				description: "List all tags",
+				response: .type([TagDTO].self)
+			)
+
 	}
 
 	@Sendable
