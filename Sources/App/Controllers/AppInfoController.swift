@@ -351,6 +351,11 @@ struct AppInfoController: RouteCollection {
         let iconPackVersionId = try? req.auth.require(IconPackVersion.self).requireID()
         let creates = try req.content.decode(Set<AppInfoCreateSingleRequest>.self)
 
+        // Early return if no items to create
+        guard !creates.isEmpty else {
+            return []
+        }
+
         // 1. Batch query existing AppInfo
         let existingAppInfos = try await AppInfo.query(on: req.db)
             .group(.or) { or in
