@@ -12,7 +12,7 @@ struct IconPackController: RouteCollection {
             .grouped(OIDCAuthenticator())
 
         iconPacks
-            .post("create", use: create)
+            .post("create", use: createIconPack)
             .openAPI(
                 summary: "Create icon pack",
                 description: "Create a new icon pack",
@@ -21,7 +21,7 @@ struct IconPackController: RouteCollection {
             )
 
         iconPacks
-            .get(use: list)
+            .get(use: listIconPacks)
             .openAPI(
                 summary: "List icon packs",
                 description: "List all icon packs for the authenticated designer",
@@ -29,7 +29,7 @@ struct IconPackController: RouteCollection {
             )
 
         iconPacks
-            .get(":iconPackId", use: get)
+            .get(":iconPackId", use: getIconPack)
             .openAPI(
                 summary: "Get icon pack",
                 description:
@@ -42,7 +42,7 @@ struct IconPackController: RouteCollection {
             )
 
         iconPacks
-            .put(":iconPackId", use: update)
+            .put(":iconPackId", use: updateIconPack)
             .openAPI(
                 summary: "Update icon pack",
                 description: "Update an icon pack's name",
@@ -51,7 +51,7 @@ struct IconPackController: RouteCollection {
             )
 
         iconPacks
-            .delete(":iconPackId", use: delete)
+            .delete(":iconPackId", use: deleteIconPack)
             .openAPI(
                 summary: "Delete icon pack",
                 description: "Delete an icon pack and all its versions",
@@ -87,7 +87,7 @@ struct IconPackController: RouteCollection {
     }
 
     @Sendable
-    func create(req: Request) async throws -> IconPackDTO {
+    func createIconPack(req: Request) async throws -> IconPackDTO {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
 
@@ -110,7 +110,7 @@ struct IconPackController: RouteCollection {
     }
 
     @Sendable
-    func list(req: Request) async throws -> [IconPackDTO] {
+    func listIconPacks(req: Request) async throws -> [IconPackDTO] {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
 
@@ -122,57 +122,28 @@ struct IconPackController: RouteCollection {
     }
 
     @Sendable
-    func get(req: Request) async throws -> IconPackDTO {
-        let designer = try req.auth.require(Designer.self)
-        let designerId = try designer.requireID()
-
-        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
-
-        guard
-            let iconPack = try await IconPack.query(on: req.db)
-                .filter(\.$id == iconPackId)
-                .first()
-        else {
-            throw Abort(.notFound)
-        }
-
-        guard iconPack.$designer.id == designerId else {
-            throw Abort(.forbidden)
-        }
-
+    func getIconPack(req: Request) async throws -> IconPackDTO {
+        let iconPack = try await requireAuthorizedIconPack(req: req, on: req.db)
         return iconPack.toDTO()
     }
 
     @Sendable
-    func update(req: Request) async throws -> IconPackDTO {
-        let designer = try req.auth.require(Designer.self)
-        let designerId = try designer.requireID()
-
-        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
+    func updateIconPack(req: Request) async throws -> IconPackDTO {
         let update = try req.content.decode(IconPack.Update.self)
+        let iconPack = try await requireAuthorizedIconPack(req: req, on: req.db)
 
+        let designerId = iconPack.$designer.id
+        let iconPackId = try iconPack.requireID()
+
+        // Check if new name conflicts with existing icon pack (excluding current one)
         guard
-            let iconPack = try await IconPack.query(on: req.db)
-                .filter(\.$id == iconPackId)
-                .first()
+            try await IconPack.query(on: req.db)
+                .filter(\.$designer.$id == designerId)
+                .filter(\.$name == update.name)
+                .filter(\.$id != iconPackId)
+                .first() == nil
         else {
-            throw Abort(.notFound)
-        }
-
-        guard iconPack.$designer.id == designerId else {
-            throw Abort(.forbidden)
-        }
-
-        // Check if new name conflicts with existing icon pack
-        if iconPack.name != update.name {
-            guard
-                try await IconPack.query(on: req.db)
-                    .filter(\.$designer.$id == designerId)
-                    .filter(\.$name == update.name)
-                    .first() == nil
-            else {
-                throw InternalError.violationOfUniqueConstraint(IconPack.self)
-            }
+            throw InternalError.violationOfUniqueConstraint(IconPack.self)
         }
 
         iconPack.name = update.name
@@ -182,52 +153,19 @@ struct IconPackController: RouteCollection {
     }
 
     @Sendable
-    func delete(req: Request) async throws -> HTTPStatus {
-        let designer = try req.auth.require(Designer.self)
-        let designerId = try designer.requireID()
-
-        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
-
-        guard
-            let iconPack = try await IconPack.query(on: req.db)
-                .filter(\.$id == iconPackId)
-                .first()
-        else {
-            throw Abort(.notFound)
-        }
-
-        guard iconPack.$designer.id == designerId else {
-            throw Abort(.forbidden)
-        }
-
+    func deleteIconPack(req: Request) async throws -> HTTPStatus {
+        let iconPack = try await requireAuthorizedIconPack(req: req, on: req.db)
         try await iconPack.delete(on: req.db)
-
         return .noContent
     }
 
     @Sendable
     func markAsAdapted(req: Request) async throws -> [IconPackAppDTO] {
-        let designer = try req.auth.require(Designer.self)
-        let designerId = try designer.requireID()
-
-        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
         let markRequest = try req.content.decode(IconPackMarkAppAsAdaptedRequest.self)
 
         return try await req.db.transaction { db in
-            // Get the icon pack
-            guard
-                let iconPack = try await IconPack.query(on: db)
-                    .filter(\.$id == iconPackId)
-                    .first()
-            else {
-                throw Abort(.notFound, reason: "Icon pack not found")
-            }
-
-            // Ensure the icon pack belongs to the authenticated designer
-            guard iconPack.$designer.id == designerId else {
-                throw Abort(
-                    .forbidden, reason: "Icon pack does not belong to the authenticated designer")
-            }
+            let iconPack = try await requireAuthorizedIconPack(req: req, on: db)
+            let iconPackId = try iconPack.requireID()
 
             // Get the app
             let appInfoList = try await AppInfo.query(on: db)
@@ -250,26 +188,12 @@ struct IconPackController: RouteCollection {
 
     @Sendable
     func requestsOfIconPack(req: Request) async throws -> Page<AppInfoWithRequestCount> {
-        let designer = try req.auth.require(Designer.self)
-        let designerId = try designer.requireID()
-
-        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
         let paginationParameters = try req.query.decode(PageRequest.self)
         let includingAdapted = try req.query.get(Bool.self, at: "includingAdapted")
 
-        // Verify the icon pack exists and belongs to the designer
-        guard
-            let iconPack = try await IconPack.query(on: req.db)
-                .filter(\.$id == iconPackId)
-                .first()
-        else {
-            throw Abort(.notFound, reason: "Icon pack not found")
-        }
-
-        guard iconPack.$designer.id == designerId else {
-            throw Abort(
-                .forbidden, reason: "Icon pack does not belong to the authenticated designer")
-        }
+        // Verify ownership
+        _ = try await requireAuthorizedIconPack(req: req, on: req.db)
+        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
 
         guard let db = req.db as? any SQLDatabase else {
             throw Abort(.internalServerError, reason: "Database does not support SQL")
@@ -480,5 +404,26 @@ struct IconPackController: RouteCollection {
             .paginate(for: req).map {
                 $0.toDTO()
             }
+    }
+
+    // MARK: - Private Helpers
+
+    @Sendable
+    private func requireAuthorizedIconPack(req: Request, on db: Database) async throws -> IconPack {
+        let designer = try req.auth.require(Designer.self)
+        let designerId = try designer.requireID()
+        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
+
+        guard
+            let iconPack = try await IconPack.query(on: db)
+                .join(Designer.self, on: \IconPack.$designer.$id == \Designer.$id)
+                .filter(\IconPack.$id == iconPackId)
+                .filter(Designer.self, \.$id == designerId)
+                .first()
+        else {
+            throw Abort(.notFound)
+        }
+
+        return iconPack
     }
 }
