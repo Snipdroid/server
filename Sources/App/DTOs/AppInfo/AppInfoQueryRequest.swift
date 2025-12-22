@@ -1,4 +1,4 @@
-import SwiftOpenAPI
+import VaporToOpenAPI
 import Vapor
 
 @OpenAPIDescriptable
@@ -20,7 +20,7 @@ struct AppInfoQueryRequest: Content {
 
 }
 
-enum SortOption: String, Content, CaseIterable, OpenAPIType {
+enum SortOption: String, Codable, CaseIterable, OpenAPIType {
     case relevance
     case count
 

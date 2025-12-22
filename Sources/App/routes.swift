@@ -19,4 +19,5 @@ func routes(_ app: Application) throws {
     try app.register(collection: RequestRecordController())
     try app.register(collection: LeafController())
     try app.register(collection: TagController())
+    try app.register(collection: IconPackAppController())
 }

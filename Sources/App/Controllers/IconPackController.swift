@@ -173,7 +173,14 @@ struct IconPackController: RouteCollection {
                 .all()
 
             if markRequest.adapted {
-                try await iconPack.$adaptedApps.attach(appInfoList, on: db)
+                try await iconPack.$adaptedApps.attach(appInfoList, on: db) { iconPackApp in
+                    let appInfoID = iconPackApp.$appInfo.id
+                    guard let drawable = markRequest.drawables[appInfoID] else {
+                        throw Abort(
+                            .badRequest, reason: "Drawable not provided for app \(appInfoID)")
+                    }
+                    iconPackApp.drawable = drawable
+                }
             } else {
                 try await iconPack.$adaptedApps.detach(appInfoList, on: db)
             }
