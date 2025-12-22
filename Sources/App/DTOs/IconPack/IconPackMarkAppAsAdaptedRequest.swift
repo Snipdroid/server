@@ -12,6 +12,17 @@ struct IconPackMarkAppAsAdaptedRequest: Content, OpenAPIType {
     /// If false, the adapted mark will be removed
     let adapted: Bool
 
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.appInfoIDs = try container.decode([UUID].self, forKey: .appInfoIDs)
+        self.drawables = Dictionary(
+            uniqueKeysWithValues: try container.decode(
+                Dictionary<String, String>.self, forKey: .drawables
+            )
+            .compactMap { (k, v) in UUID(uuidString: k).map { ($0, v) } })
+        self.adapted = try container.decode(Bool.self, forKey: .adapted)
+    }
+
     /// Custom OpenAPI schema representation
     static var openAPISchema: SchemaObject {
         SchemaObject(
@@ -20,7 +31,10 @@ struct IconPackMarkAppAsAdaptedRequest: Content, OpenAPIType {
                 ObjectContext(
                     properties: [
                         "appInfoIDs": .array(of: .uuid)
-                            .with(\.description, "A list of app info IDs that are to be marked or unmarked as adapted"),
+                            .with(
+                                \.description,
+                                "A list of app info IDs that are to be marked or unmarked as adapted"
+                            ),
                         "drawables": .dictionary(of: .string)
                             .with(
                                 \.description,
