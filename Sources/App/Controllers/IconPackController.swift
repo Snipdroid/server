@@ -63,7 +63,7 @@ struct IconPackController: RouteCollection {
             .openAPI(
                 summary: "Mark app as adapted",
                 description: "Mark an app as adapted, or remove the adapted mark",
-                body: .type(IconPackMarkAppAsAdaptedRequest.self),
+                body: .schema(IconPackMarkAppAsAdaptedRequest.openAPISchema),
                 response: .type([IconPackAppDTO].self)
             )
 
