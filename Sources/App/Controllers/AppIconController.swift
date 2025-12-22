@@ -36,10 +36,10 @@ struct AppIconController: RouteCollection {
 
         let iconURL = try getIconURL(req: req, packageName: packageName, for: .download)
 
-        let signedURL = try await req.aws.s3.signURL(
-            url: iconURL, httpMethod: .GET, expires: .minutes(60))
+        // let signedURL = try await req.aws.s3.signURL(
+        // url: iconURL, httpMethod: .GET, expires: .minutes(60))
 
-        let redirectResponse = req.redirect(to: signedURL.absoluteString, redirectType: .temporary)
+        let redirectResponse = req.redirect(to: iconURL.absoluteString, redirectType: .temporary)
         redirectResponse.headers.cacheControl = .init(
             mustRevalidated: false,
             noCache: false,
