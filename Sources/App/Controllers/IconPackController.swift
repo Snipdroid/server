@@ -24,7 +24,10 @@ struct IconPackController: RouteCollection {
             .get(use: listIconPacks)
             .openAPI(
                 summary: "List icon packs",
-                description: "List all icon packs for the authenticated designer",
+                description: """
+                    List all icon packs for the authenticated designer.
+                    You can use `collaborators` to tell if the icon pack is shared with you.
+                    """,
                 response: .type([IconPackDTO].self)
             )
 
@@ -128,6 +131,7 @@ struct IconPackController: RouteCollection {
                     .filter(\.$designer.$id == designerId)
                     .filter(Designer.self, \.$id == designerId)
             }
+            .with(\.$collaborators)
             .all()
 
         return iconPacks.map { $0.toDTO() }
