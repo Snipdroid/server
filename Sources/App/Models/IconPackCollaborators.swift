@@ -23,12 +23,12 @@ final class IconPackCollaborators: Model, @unchecked Sendable {
 
     init(
         id: UUID? = nil, iconPackId: IconPack.IDValue, collaboratorId: Designer.IDValue,
-        invitedBy: Designer
+        invitedBy: Designer.IDValue
     ) {
         self.id = id
         self.$iconPack.id = iconPackId
         self.$collaborator.id = collaboratorId
-        self.invitedBy = invitedBy
+        self.$invitedBy.id = invitedBy
     }
 }
 
