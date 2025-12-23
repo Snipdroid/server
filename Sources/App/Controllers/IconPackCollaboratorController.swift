@@ -4,7 +4,8 @@ import VaporToOpenAPI
 
 struct IconPackCollaboratorController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
-        let collaborators = routes
+        let collaborators =
+            routes
             .grouped("icon-pack", ":iconPackId", "collaborators")
             .grouped(OIDCAuthenticator())
 
@@ -38,26 +39,15 @@ struct IconPackCollaboratorController: RouteCollection {
     // Handler methods
     @Sendable
     func listCollaborators(req: Request) async throws -> [DesignerDTO] {
-        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
-
-        // Verify access (owner or collaborator can view)
-        _ = try await requireAuthorizedIconPack(req: req, on: req.db, requireOwner: false)
-
-        // Query collaborators through the pivot table
-        let collaborators = try await Designer.query(on: req.db)
-            .join(
-                IconPackCollaborators.self,
-                on: \Designer.$id == \IconPackCollaborators.$collaborator.$id
-            )
-            .filter(IconPackCollaborators.self, \.$iconPack.$id == iconPackId)
-            .all()
-
-        return collaborators.map { $0.toDTO() }
+        let iconPack = try await requireAuthorizedIconPack(
+            req: req, on: req.db, requireOwner: false)
+        return try await iconPack.$collaborators.query(on: req.db).all().map { $0.toDTO() }
     }
 
     @Sendable
     func addCollaborators(req: Request) async throws -> [DesignerDTO] {
         let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
+        let designer = try req.auth.require(Designer.self)
 
         // Verify owner access
         let iconPack = try await requireAuthorizedIconPack(req: req, on: req.db, requireOwner: true)
