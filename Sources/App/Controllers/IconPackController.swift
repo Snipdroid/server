@@ -87,6 +87,15 @@ struct IconPackController: RouteCollection {
                 query: .type(PageRequest.self),
                 response: .type(Page<AppInfoDTO>.self)
             )
+
+        iconPacks
+            .get(":iconPackId", "missing-apps", use: findMissingApps)
+            .openAPI(
+                summary: "Find missing apps",
+                description:
+                    "Find apps with the same package name as apps in the icon pack but not yet adapted",
+                response: .type([AppInfoDTO].self)
+            )
     }
 
     @Sendable
@@ -132,6 +141,7 @@ struct IconPackController: RouteCollection {
                     .filter(Designer.self, \.$id == designerId)
             }
             .with(\.$collaborators)
+            .with(\.$designer)
             .all()
 
         return iconPacks.map { $0.toDTO() }
@@ -431,6 +441,77 @@ struct IconPackController: RouteCollection {
             }
     }
 
+    @Sendable
+    func findMissingApps(req: Request) async throws -> [AppInfoDTO] {
+        let iconPack = try await requireAuthorizedIconPack(
+            req: req, on: req.db, requireOwner: false)
+        let iconPackId = try iconPack.requireID()
+
+        guard let db = req.db as? any SQLDatabase else {
+            throw Abort(.internalServerError, reason: "Database driver not supported")
+        }
+
+        // Build subquery to get distinct package names from the icon pack
+        let packageNameSubquery = db.select()
+            .column(SQLDistinct(AppInfo.sqlColumn(for: \.$packageName)))
+            .from(IconPackApp.schema)
+            .join(
+                AppInfo.schema,
+                on: IconPackApp.sqlColumn(for: \.$appInfo.$id),
+                .equal,
+                AppInfo.sqlColumn(for: \.$id)
+            )
+            .where(
+                IconPackApp.sqlColumn(for: \.$iconPack.$id),
+                .equal,
+                SQLBind(iconPackId)
+            )
+            .select
+
+        // Main query: find AppInfos with matching package names but not in the icon pack
+        let queryResults = try await db.select()
+            .column(AppInfo.sqlColumn(for: \.$id), as: "app_info_id")
+            .from(AppInfo.schema)
+            .join(
+                IconPackApp.schema,
+                method: .left,
+                on: SQLBinaryExpression(
+                    left: SQLBinaryExpression(
+                        left: IconPackApp.sqlColumn(for: \.$appInfo.$id),
+                        op: SQLBinaryOperator.equal,
+                        right: AppInfo.sqlColumn(for: \.$id)
+                    ),
+                    op: SQLBinaryOperator.and,
+                    right: SQLBinaryExpression(
+                        left: IconPackApp.sqlColumn(for: \.$iconPack.$id),
+                        op: SQLBinaryOperator.equal,
+                        right: SQLBind(iconPackId)
+                    )
+                )
+            )
+            .where(
+                AppInfo.sqlColumn(for: \.$packageName),
+                .in,
+                SQLSubquery(packageNameSubquery)
+            )
+            .where(
+                IconPackApp.sqlColumn(for: \.$id),
+                .is,
+                SQLLiteral.null
+            )
+            .all()
+
+        // Extract AppInfo IDs from query results
+        let appInfoIds: [UUID] = queryResults.compactMap { row in
+            try? row.decode(column: "app_info_id", as: UUID.self)
+        }
+
+        return try await AppInfo.query(on: req.db)
+            .filter(\.$id ~~ appInfoIds)
+            .all()
+            .map { $0.toDTO() }
+    }
+
     // MARK: - Private Helpers
 
     @Sendable
@@ -461,6 +542,8 @@ struct IconPackController: RouteCollection {
                         }
                     }
                 )
+                .with(\.$designer)
+                .with(\.$collaborators)
                 .first()
         else {
             throw Abort(.notFound)
