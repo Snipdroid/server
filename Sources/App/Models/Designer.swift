@@ -39,6 +39,9 @@ final class Designer: Model, Authenticatable, @unchecked Sendable {
     @Field(key: "role")
     var role: DesignerRole
 
+    @Siblings(through: IconPackCollaborators.self, from: \.$collaborator, to: \.$iconPack)
+    var collaboratedIconPacks: [IconPack]
+
     init() {}
 
     init(

@@ -110,9 +110,17 @@ struct IconPackVersionController: RouteCollection {
         // Verify ownership and fetch versions in a single query
         let versions = try await IconPackVersion.query(on: req.db)
             .join(IconPack.self, on: \IconPackVersion.$iconPack.$id == \IconPack.$id)
-            .join(Designer.self, on: \IconPack.$designer.$id == \Designer.$id)
+            .join(IconPackCollaborators.self, on: \IconPack.$id == \IconPackCollaborators.$iconPack.$id, method: .left)
+            .join(Designer.self, on: \IconPackCollaborators.$collaborator.$id == \Designer.$id)
             .filter(\IconPackVersion.$iconPack.$id == iconPackId)
-            .filter(Designer.self, \.$id == designerId)
+            .group(
+                .or,
+                { group in
+                    group
+                        .filter(IconPack.self, \.$designer.$id == designerId)
+                        .filter(Designer.self, \.$id == designerId)
+                }
+            )
             .paginate(for: req)
 
         return versions.map { $0.toDTO() }

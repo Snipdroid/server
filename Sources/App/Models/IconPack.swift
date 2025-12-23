@@ -33,6 +33,9 @@ final class IconPack: Model, @unchecked Sendable {
     @Siblings(through: IconPackApp.self, from: \.$iconPack, to: \.$appInfo)
     var adaptedApps: [AppInfo]
 
+    @Siblings(through: IconPackCollaborators.self, from: \.$iconPack, to: \.$collaborator)
+    var collaborators: [Designer]
+
     init() {}
 
     init(id: UUID? = nil, designerId: Designer.IDValue, name: String) {

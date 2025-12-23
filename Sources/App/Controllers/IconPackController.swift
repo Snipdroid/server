@@ -115,7 +115,16 @@ struct IconPackController: RouteCollection {
         let designerId = try designer.requireID()
 
         let iconPacks = try await IconPack.query(on: req.db)
-            .filter(\.$designer.$id == designerId)
+            .join(
+                IconPackCollaborators.self,
+                on: \IconPack.$id == \IconPackCollaborators.$iconPack.$id, method: .left
+            )
+            .join(Designer.self, on: \IconPackCollaborators.$collaborator.$id == \Designer.$id, method: .left)
+            .group(.or) { group in
+                group
+                    .filter(\.$designer.$id == designerId)
+                    .filter(Designer.self, \.$id == designerId)
+            }
             .all()
 
         return iconPacks.map { $0.toDTO() }
