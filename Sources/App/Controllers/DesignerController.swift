@@ -47,6 +47,16 @@ struct DesignerController: RouteCollection {
                 description: "Get statistics for the currently authenticated designer",
                 response: .type(DesignerStatisticsResponse.self)
             )
+
+        protected
+            .get("search", use: searchDesigner)
+            .openAPI(
+                summary: "Search Designers",
+                description: "Search for designers by email",
+                query: ["query": .string],
+                response: .type(Page<DesignerDTO>.self)
+            )
+
     }
 
     @Sendable
@@ -182,4 +192,12 @@ struct DesignerController: RouteCollection {
         }
     }
 
+    @Sendable
+    func searchDesigner(req: Request) async throws -> Page<DesignerDTO> {
+        let email = try req.query.get(String.self, at: "query")
+        return try await Designer.query(on: req.db)
+            .filter(\.$email ~~ email)
+            .paginate(for: req)
+            .map { $0.toDTO() }
+    }
 }
