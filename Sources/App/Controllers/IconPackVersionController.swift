@@ -129,24 +129,10 @@ struct IconPackVersionController: RouteCollection {
     @Sendable
     func requestsOfVersion(req: Request) async throws -> Page<IconPackVersionRequestRecordResponse>
     {
-        let designer = try req.auth.require(Designer.self)
-        let designerId = try designer.requireID()
-
-        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
-        let versionId = try req.parameters.require("versionId", as: UUID.self)
         let includingAdapted = try req.query.get(Bool.self, at: "includingAdapted")
 
-        guard
-            let version = try await IconPackVersion.query(on: req.db)
-                .join(IconPack.self, on: \IconPackVersion.$iconPack.$id == \IconPack.$id)
-                .join(Designer.self, on: \IconPack.$designer.$id == \Designer.$id)
-                .filter(\IconPackVersion.$id == versionId)
-                .filter(IconPack.self, \.$id == iconPackId)
-                .filter(Designer.self, \.$id == designerId)
-                .first()
-        else {
-            throw Abort(.notFound)
-        }
+        let version = try await requireAuthorizedVersion(req: req, on: req.db, requireOwner: false)
+        let iconPackId = version.$iconPack.id
 
         var query = version.$requestRecords.query(on: req.db)
             .with(\.$appInfo)
@@ -173,23 +159,7 @@ struct IconPackVersionController: RouteCollection {
 
     @Sendable
     func createToken(req: Request) async throws -> IconPackVersion.TokenResponse {
-        let designer = try req.auth.require(Designer.self)
-        let designerId = try designer.requireID()
-
-        let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
-        let versionId = try req.parameters.require("versionId", as: UUID.self)
-
-        guard
-            let version = try await IconPackVersion.query(on: req.db)
-                .join(IconPack.self, on: \IconPackVersion.$iconPack.$id == \IconPack.$id)
-                .join(Designer.self, on: \IconPack.$designer.$id == \Designer.$id)
-                .filter(\IconPackVersion.$id == versionId)
-                .filter(IconPack.self, \.$id == iconPackId)
-                .filter(Designer.self, \.$id == designerId)
-                .first()
-        else {
-            throw Abort(.notFound)
-        }
+        let version = try await requireAuthorizedVersion(req: req, on: req.db, requireOwner: false)
 
         let tokenRequest = try req.content.decode(IconPackVersion.TokenRequest.self)
         let payload = try IconPackVersion.Token(
@@ -203,26 +173,51 @@ struct IconPackVersionController: RouteCollection {
 
     @Sendable
     func deleteVersion(req: Request) async throws -> IconPackVersionDTO {
+        let version = try await requireAuthorizedVersion(req: req, on: req.db, requireOwner: true)
+
+        try await version.delete(on: req.db)
+
+        return version.toDTO()
+    }
+
+    // MARK: - Private Helpers
+
+    @Sendable
+    private func requireAuthorizedVersion(req: Request, on db: Database, requireOwner: Bool)
+        async throws -> IconPackVersion
+    {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
-
         let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
-        let versionId = try req.parameters.require("versionId", as: UUID.self)
+        let iconPackVersionId = try req.parameters.require("versionId", as: UUID.self)
 
         guard
-            let version = try await IconPackVersion.query(on: req.db)
+            let iconPackVersion = try await IconPackVersion.query(on: db)
                 .join(IconPack.self, on: \IconPackVersion.$iconPack.$id == \IconPack.$id)
-                .join(Designer.self, on: \IconPack.$designer.$id == \Designer.$id)
-                .filter(\IconPackVersion.$id == versionId)
+                .join(
+                    IconPackCollaborators.self,
+                    on: \IconPack.$id == \IconPackCollaborators.$iconPack.$id, method: .left
+                )
+                .join(
+                    Designer.self, on: \IconPackCollaborators.$collaborator.$id == \Designer.$id,
+                    method: .left
+                )
                 .filter(IconPack.self, \.$id == iconPackId)
-                .filter(Designer.self, \.$id == designerId)
+                .filter(\IconPackVersion.$id == iconPackVersionId)
+                .group(
+                    .or,
+                    {
+                        $0.filter(IconPack.self, \.$designer.$id == designerId)
+                        if !requireOwner {
+                            $0.filter(Designer.self, \.$id == designerId)
+                        }
+                    }
+                )
                 .first()
         else {
             throw Abort(.notFound)
         }
 
-        try await version.delete(on: req.db)
-
-        return version.toDTO()
+        return iconPackVersion
     }
 }
