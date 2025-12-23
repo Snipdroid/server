@@ -52,12 +52,28 @@ struct DesignerController: RouteCollection {
     @Sendable
     func me(req: Request) async throws -> DesignerDTO {
         let designer = try req.auth.require(Designer.self)
-        return designer.toDTO()
+
+        // Cache-revalidate: sync if data is older than 5 minutes
+        let needsSync =
+            designer.updatedAt.map {
+                Date().timeIntervalSince($0) > 300
+            } ?? true
+
+        return if needsSync {
+            try await syncWithOIDCProvider(req: req, designer: designer).toDTO()
+        } else {
+            designer.toDTO()
+        }
     }
 
     @Sendable
     func sync(req: Request) async throws -> DesignerDTO {
         let designer = try req.auth.require(Designer.self)
+        let updated = try await syncWithOIDCProvider(req: req, designer: designer)
+        return updated.toDTO()
+    }
+
+    private func syncWithOIDCProvider(req: Request, designer: Designer) async throws -> Designer {
         let oidcConfig = req.application.oidc
 
         // Get the bearer token from the request
@@ -88,7 +104,7 @@ struct DesignerController: RouteCollection {
         designer.name = userinfo.name ?? userinfo.preferredUsername
         try await designer.save(on: req.db)
 
-        return designer.toDTO()
+        return designer
     }
 
     @Sendable
