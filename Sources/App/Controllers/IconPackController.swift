@@ -119,7 +119,10 @@ struct IconPackController: RouteCollection {
                 IconPackCollaborators.self,
                 on: \IconPack.$id == \IconPackCollaborators.$iconPack.$id, method: .left
             )
-            .join(Designer.self, on: \IconPackCollaborators.$collaborator.$id == \Designer.$id, method: .left)
+            .join(
+                Designer.self, on: \IconPackCollaborators.$collaborator.$id == \Designer.$id,
+                method: .left
+            )
             .group(.or) { group in
                 group
                     .filter(\.$designer.$id == designerId)
@@ -132,14 +135,15 @@ struct IconPackController: RouteCollection {
 
     @Sendable
     func getIconPack(req: Request) async throws -> IconPackDTO {
-        let iconPack = try await requireAuthorizedIconPack(req: req, on: req.db)
+        let iconPack = try await requireAuthorizedIconPack(
+            req: req, on: req.db, requireOwner: false)
         return iconPack.toDTO()
     }
 
     @Sendable
     func updateIconPack(req: Request) async throws -> IconPackDTO {
         let update = try req.content.decode(IconPack.Update.self)
-        let iconPack = try await requireAuthorizedIconPack(req: req, on: req.db)
+        let iconPack = try await requireAuthorizedIconPack(req: req, on: req.db, requireOwner: true)
 
         let designerId = iconPack.$designer.id
         let iconPackId = try iconPack.requireID()
@@ -163,7 +167,7 @@ struct IconPackController: RouteCollection {
 
     @Sendable
     func deleteIconPack(req: Request) async throws -> HTTPStatus {
-        let iconPack = try await requireAuthorizedIconPack(req: req, on: req.db)
+        let iconPack = try await requireAuthorizedIconPack(req: req, on: req.db, requireOwner: true)
         try await iconPack.delete(on: req.db)
         return .noContent
     }
@@ -173,7 +177,8 @@ struct IconPackController: RouteCollection {
         let markRequest = try req.content.decode(IconPackMarkAppAsAdaptedRequest.self)
 
         return try await req.db.transaction { db in
-            let iconPack = try await requireAuthorizedIconPack(req: req, on: db)
+            let iconPack = try await requireAuthorizedIconPack(
+                req: req, on: db, requireOwner: false)
             let iconPackId = try iconPack.requireID()
 
             // Get the app
@@ -208,7 +213,7 @@ struct IconPackController: RouteCollection {
         let includingAdapted = try req.query.get(Bool.self, at: "includingAdapted")
 
         // Verify ownership
-        _ = try await requireAuthorizedIconPack(req: req, on: req.db)
+        _ = try await requireAuthorizedIconPack(req: req, on: req.db, requireOwner: false)
         let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
 
         guard let db = req.db as? any SQLDatabase else {
@@ -425,16 +430,33 @@ struct IconPackController: RouteCollection {
     // MARK: - Private Helpers
 
     @Sendable
-    private func requireAuthorizedIconPack(req: Request, on db: Database) async throws -> IconPack {
+    private func requireAuthorizedIconPack(req: Request, on db: Database, requireOwner: Bool)
+        async throws -> IconPack
+    {
         let designer = try req.auth.require(Designer.self)
         let designerId = try designer.requireID()
         let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
 
         guard
             let iconPack = try await IconPack.query(on: db)
-                .join(Designer.self, on: \IconPack.$designer.$id == \Designer.$id)
+                .join(
+                    IconPackCollaborators.self,
+                    on: \IconPack.$id == \IconPackCollaborators.$iconPack.$id, method: .left
+                )
+                .join(
+                    Designer.self, on: \IconPackCollaborators.$collaborator.$id == \Designer.$id,
+                    method: .left
+                )
                 .filter(\IconPack.$id == iconPackId)
-                .filter(Designer.self, \.$id == designerId)
+                .group(
+                    .or,
+                    {
+                        $0.filter(\.$designer.$id == designerId)
+                        if !requireOwner {
+                            $0.filter(Designer.self, \.$id == designerId)
+                        }
+                    }
+                )
                 .first()
         else {
             throw Abort(.notFound)

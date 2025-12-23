@@ -111,7 +111,7 @@ struct IconPackVersionController: RouteCollection {
         let versions = try await IconPackVersion.query(on: req.db)
             .join(IconPack.self, on: \IconPackVersion.$iconPack.$id == \IconPack.$id)
             .join(IconPackCollaborators.self, on: \IconPack.$id == \IconPackCollaborators.$iconPack.$id, method: .left)
-            .join(Designer.self, on: \IconPackCollaborators.$collaborator.$id == \Designer.$id)
+            .join(Designer.self, on: \IconPackCollaborators.$collaborator.$id == \Designer.$id, method: .left)
             .filter(\IconPackVersion.$iconPack.$id == iconPackId)
             .group(
                 .or,
