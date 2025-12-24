@@ -144,7 +144,7 @@ struct IconPackController: RouteCollection {
             .with(\.$designer)
             .all()
 
-        return iconPacks.map { $0.toDTO() }
+        return Array(Set(iconPacks.map { $0.toDTO() }))
     }
 
     @Sendable
