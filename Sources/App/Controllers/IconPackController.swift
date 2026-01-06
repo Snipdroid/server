@@ -83,9 +83,10 @@ struct IconPackController: RouteCollection {
         routes.get("icon-pack", ":iconPackId", "adapted-apps", use: getAdaptedApps)
             .openAPI(
                 summary: "Get adapted apps",
-                description: "Get the list of apps that have been adapted",
+                description:
+                    "Get the list of apps that have been adapted, associated AppInfo is populated",
                 query: .type(PageRequest.self),
-                response: .type(Page<AppInfoDTO>.self)
+                response: .type(Page<IconPackApp>.self)
             )
 
         iconPacks
@@ -422,23 +423,14 @@ struct IconPackController: RouteCollection {
     }
 
     @Sendable
-    func getAdaptedApps(req: Request) async throws -> Page<AppInfoDTO> {
+    func getAdaptedApps(req: Request) async throws -> Page<IconPackAppDTO> {
         let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
 
-        guard
-            let iconPack =
-                try await IconPack
-                .query(on: req.db)
-                .filter(\.$id == iconPackId)
-                .first()
-        else {
-            throw Abort(.notFound, reason: "Icon pack not found")
-        }
-
-        return try await iconPack.$adaptedApps.query(on: req.db)
-            .paginate(for: req).map {
-                $0.toDTO()
-            }
+        return try await IconPackApp.query(on: req.db)
+            .filter(\.$iconPack.$id == iconPackId)
+            .with(\.$appInfo)
+            .paginate(for: req)
+            .map { $0.toDTO() }
     }
 
     @Sendable
