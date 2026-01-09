@@ -90,6 +90,15 @@ struct IconPackController: RouteCollection {
             )
 
         iconPacks
+            .patch(":iconPackId", "adapted-apps", ":iconPackAppId", use: updateIconPackApp)
+            .openAPI(
+                summary: "Update adapted app",
+                description: "Update an adapted app's categories",
+                body: .type(IconPackApp.Update.self),
+                response: .type(IconPackAppDTO.self)
+            )
+
+        iconPacks
             .get(":iconPackId", "missing-apps", use: findMissingApps)
             .openAPI(
                 summary: "Find missing apps",
@@ -432,6 +441,29 @@ struct IconPackController: RouteCollection {
             .with(\.$appInfo)
             .paginate(for: req)
             .map { $0.toDTO() }
+    }
+
+    @Sendable
+    func updateIconPackApp(req: Request) async throws -> IconPackAppDTO {
+        let iconPack = try await requireAuthorizedIconPack(
+            req: req, on: req.db, requireOwner: false)
+        let iconPackId = try iconPack.requireID()
+        let iconPackAppId = try req.parameters.require("iconPackAppId", as: UUID.self)
+        let update = try req.content.decode(IconPackApp.Update.self)
+
+        guard
+            let iconPackApp = try await IconPackApp.query(on: req.db)
+                .filter(\.$id == iconPackAppId)
+                .filter(\.$iconPack.$id == iconPackId)
+                .first()
+        else {
+            throw Abort(.notFound)
+        }
+
+        iconPackApp.categories = update.categories
+        try await iconPackApp.save(on: req.db)
+
+        return iconPackApp.toDTO()
     }
 
     @Sendable
