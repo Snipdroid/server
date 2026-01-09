@@ -439,6 +439,7 @@ struct IconPackController: RouteCollection {
         return try await IconPackApp.query(on: req.db)
             .filter(\.$iconPack.$id == iconPackId)
             .with(\.$appInfo)
+            .sort(\.$createdAt, .ascending)
             .paginate(for: req)
             .map { $0.toDTO() }
     }
@@ -451,19 +452,22 @@ struct IconPackController: RouteCollection {
         let iconPackAppId = try req.parameters.require("iconPackAppId", as: UUID.self)
         let update = try req.content.decode(IconPackApp.Update.self)
 
-        guard
-            let iconPackApp = try await IconPackApp.query(on: req.db)
-                .filter(\.$id == iconPackAppId)
-                .filter(\.$iconPack.$id == iconPackId)
-                .first()
-        else {
-            throw Abort(.notFound)
+        return try await req.db.transaction { db in
+            guard
+                let iconPackApp = try await IconPackApp.query(on: req.db)
+                    .filter(\.$id == iconPackAppId)
+                    .filter(\.$iconPack.$id == iconPackId)
+                    .first()
+            else {
+                throw Abort(.notFound)
+            }
+
+            iconPackApp.categories = update.categories
+            try await iconPackApp.save(on: req.db)
+
+            return iconPackApp.toDTO()
         }
 
-        iconPackApp.categories = update.categories
-        try await iconPackApp.save(on: req.db)
-
-        return iconPackApp.toDTO()
     }
 
     @Sendable

@@ -22,6 +22,9 @@ final class IconPackApp: Model, @unchecked Sendable {
 	@Timestamp(key: "created_at", on: .create)
 	var createdAt: Date?
 
+	@Timestamp(key: "updated_at", on: .update)
+	var updatedAt: Date?
+
 	@Field(key: "categories")
 	var categories: [String]
 
@@ -52,6 +55,7 @@ struct CreateIconPackApp: AsyncMigration {
 			)
 			.field("drawable", .string, .required)
 			.field("created_at", .datetime)
+			.field("updated_at", .datetime)
 			.field("categories", .array(of: .string), .required, .sql(.default("{}")))
 			.unique(on: "icon_pack_id", "app_info_id")
 			.create()
