@@ -454,7 +454,7 @@ struct IconPackController: RouteCollection {
 
         return try await req.db.transaction { db in
             guard
-                let iconPackApp = try await IconPackApp.query(on: req.db)
+                let iconPackApp = try await IconPackApp.query(on: db)
                     .filter(\.$id == iconPackAppId)
                     .filter(\.$iconPack.$id == iconPackId)
                     .first()
@@ -463,7 +463,7 @@ struct IconPackController: RouteCollection {
             }
 
             iconPackApp.categories = update.categories
-            try await iconPackApp.save(on: req.db)
+            try await iconPackApp.save(on: db)
 
             return iconPackApp.toDTO()
         }
