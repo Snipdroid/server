@@ -439,7 +439,7 @@ struct IconPackController: RouteCollection {
         return try await IconPackApp.query(on: req.db)
             .filter(\.$iconPack.$id == iconPackId)
             .with(\.$appInfo)
-            .sort(\.$createdAt, .ascending)
+            .sort(\.$updatedAt, .ascending)
             .paginate(for: req)
             .map { $0.toDTO() }
     }
@@ -463,7 +463,7 @@ struct IconPackController: RouteCollection {
             }
 
             iconPackApp.categories = update.categories
-            try await iconPackApp.save(on: db)
+            try await iconPackApp.update(on: db)
 
             return iconPackApp.toDTO()
         }
