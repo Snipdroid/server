@@ -154,7 +154,7 @@ struct IconPackController: RouteCollection {
             .with(\.$designer)
             .all()
 
-        return Array(Set(iconPacks.map { $0.toDTO() }))
+        return Array(Set(iconPacks.map { $0.toDTO() })).sorted { $0.name < $1.name }
     }
 
     @Sendable
