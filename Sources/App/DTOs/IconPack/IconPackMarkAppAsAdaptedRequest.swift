@@ -8,6 +8,9 @@ struct IconPackMarkAppAsAdaptedRequest: Content, OpenAPIType {
     /// Drawable names for each app, must be the same size as `appInfoIDs` if adapted is true
     let drawables: [UUID: String]
 
+    /// Categories for each app, can be empty
+    let categories: [UUID: [String]]
+
     /// Whether the app should be marked as adapted
     /// If false, the adapted mark will be removed
     let adapted: Bool
@@ -20,6 +23,13 @@ struct IconPackMarkAppAsAdaptedRequest: Content, OpenAPIType {
                 Dictionary<String, String>.self, forKey: .drawables
             )
             .compactMap { (k, v) in UUID(uuidString: k).map { ($0, v) } })
+        self.categories = Dictionary(
+            uniqueKeysWithValues: try container.decode(
+                Dictionary<String, [String]>.self, forKey: .categories
+            )
+            .compactMap { (k, v) in UUID(uuidString: k).map {
+                ($0, v)
+            } })
         self.adapted = try container.decode(Bool.self, forKey: .adapted)
     }
 
@@ -40,13 +50,18 @@ struct IconPackMarkAppAsAdaptedRequest: Content, OpenAPIType {
                                 \.description,
                                 "Drawable names for each app. Keys must be UUIDs matching the appInfoIDs. Required when adapted is true."
                             ),
+                        "categories": .dictionary(of: .array(of: .string))
+                            .with(
+                                \.description,
+                                "Categories for each app. Keys must be UUIDs matching the appInfoIDs. Can be empty."
+                            ),
                         "adapted": .boolean
                             .with(
                                 \.description,
                                 "Whether the app should be marked as adapted. If false, the adapted mark will be removed"
                             ),
                     ],
-                    required: ["appInfoIDs", "drawables", "adapted"]
+                    required: ["appInfoIDs", "drawables", "categories", "adapted"]
                 )
             )
         )

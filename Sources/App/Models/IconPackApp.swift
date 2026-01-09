@@ -22,6 +22,9 @@ final class IconPackApp: Model, @unchecked Sendable {
 	@Timestamp(key: "created_at", on: .create)
 	var createdAt: Date?
 
+	@Field(key: "categories")
+	var categories: [String]
+
 	init() {}
 
 	init(id: UUID? = nil, iconPack: IconPack, appInfo: AppInfo, drawable: String) throws {
@@ -29,6 +32,7 @@ final class IconPackApp: Model, @unchecked Sendable {
 		self.$iconPack.id = try iconPack.requireID()
 		self.$appInfo.id = try appInfo.requireID()
 		self.drawable = drawable
+		self.categories = []
 	}
 }
 
@@ -48,6 +52,7 @@ struct CreateIconPackApp: AsyncMigration {
 			)
 			.field("drawable", .string, .required)
 			.field("created_at", .datetime)
+			.field("categories", .array(of: .string), .required, .sql(.default("{}")))
 			.unique(on: "icon_pack_id", "app_info_id")
 			.create()
 	}

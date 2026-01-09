@@ -209,6 +209,7 @@ struct IconPackController: RouteCollection {
                             .badRequest, reason: "Drawable not provided for app \(appInfoID)")
                     }
                     iconPackApp.drawable = drawable
+                    iconPackApp.categories = markRequest.categories[appInfoID] ?? []
                 }
             } else {
                 try await iconPack.$adaptedApps.detach(appInfoList, on: db)
