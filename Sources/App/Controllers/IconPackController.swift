@@ -84,9 +84,14 @@ struct IconPackController: RouteCollection {
             .openAPI(
                 summary: "Get adapted apps",
                 description:
-                    "Get the list of apps that have been adapted, associated AppInfo is populated",
+                    """
+                    Get the list of apps that have been adapted for this icon pack.
+                    Results are sorted by most recently updated first.
+                    Supports optional search by drawable name using ?query= parameter.
+                    Returns IconPackAppDTO objects with populated AppInfo.
+                    """,
                 query: .type(PageRequest.self),
-                response: .type(Page<IconPackApp>.self)
+                response: .type(Page<IconPackAppDTO>.self)
             )
 
         iconPacks
@@ -435,13 +440,19 @@ struct IconPackController: RouteCollection {
     @Sendable
     func getAdaptedApps(req: Request) async throws -> Page<IconPackAppDTO> {
         let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
+        let queryString = try? req.query.get(String.self, at: "query")
 
-        return try await IconPackApp.query(on: req.db)
+        var query =
+            IconPackApp.query(on: req.db)
             .filter(\.$iconPack.$id == iconPackId)
             .with(\.$appInfo)
-            .sort(\.$updatedAt, .ascending)
-            .paginate(for: req)
-            .map { $0.toDTO() }
+            .sort(\.$updatedAt, .descending)
+
+        if let queryString {
+            query = query.filter(\.$drawable ~~ queryString)
+        }
+
+        return try await query.paginate(for: req).map { $0.toDTO() }
     }
 
     @Sendable
