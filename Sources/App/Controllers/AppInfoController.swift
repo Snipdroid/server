@@ -12,9 +12,37 @@ struct AppInfoController: RouteCollection {
             .openAPI(
                 summary: "Search for apps",
                 description:
-                    "Search for apps using a simple query or advanced filters. The `query` parameter searches across name, package name, and main activity. Advanced filters (byName, byPackageName, byMainActivity) can be combined with query using AND logic. Use `sortBy` to control result ordering.",
+                "Search for apps using a simple query or advanced filters. The `query` parameter searches across name, package name, and main activity. Advanced filters (byName, byPackageName, byMainActivity) can be combined with query using AND logic. Use `sortBy` to control result ordering.",
                 query: .all(of: .type(AppInfoQueryRequest.self), .type(PageRequest.self)),
                 response: .type(Page<AppInfoDTO>.self)
+            )
+
+        appInfo
+            .get("exact-search", use: exactSingleSearch)
+            .openAPI(
+                summary: "Exact search for one app",
+                description: "Perform an exact search for one app based on specified criteria.",
+                response: .type(AppInfoDTO.self)
+            )
+
+        appInfo
+            .post("candidate-search", use: candidateSearch)
+            .openAPI(
+                summary: "Candidate search for apps",
+                description: """
+                Searches for apps that match any of the provided package names AND any of the provided main activities.
+
+                ⚠️ **Important**: This endpoint returns candidates and may include false positives.
+                Results will include apps where the package name matches ANY entry in packageNames AND the main activity matches ANY entry in mainActivities,
+                but not necessarily matching the same index pairing.
+
+                For example, if you search for [(packageA, activityX), (packageB, activityY)],
+                you may receive (packageA, activityY) or (packageB, activityX) in addition to the intended matches.
+
+                Clients should filter results to verify exact (packageName, mainActivity) pairs match their requirements.
+                """,
+                body: .type(AppInfoCandidateSearchRequest.self),
+                response: .type([AppInfoDTO].self)
             )
 
         appInfo.grouped(IconPackVersionAuthenticator())
@@ -22,11 +50,11 @@ struct AppInfoController: RouteCollection {
             .openAPI(
                 summary: "Create or update app information",
                 description: """
-                    Creates or updates app information.
-                    If an app with the same package name and main activity already exists, it will be updated. Otherwise, a new app will be created.
-                    Localized names are also created or updated.
-                    A request record is created for each app to associate it with the authenticated icon pack.
-                    """,
+                Creates or updates app information.
+                If an app with the same package name and main activity already exists, it will be updated. Otherwise, a new app will be created.
+                Localized names are also created or updated.
+                A request record is created for each app to associate it with the authenticated icon pack.
+                """,
                 body: .type(Set<AppInfoCreateSingleRequest>.self),
                 response: .type([AppInfoDTO].self)
             )
@@ -55,9 +83,9 @@ struct AppInfoController: RouteCollection {
             switch (query.query, query.sortBy) {
             case (.none, _):
                 .count
-            case (.some(let query), .none):
+            case let (.some(query), .none):
                 query.isEmpty ? .count : .relevance
-            case (.some, .some(let sortBy)):
+            case let (.some, .some(sortBy)):
                 sortBy
             }
 
@@ -123,12 +151,14 @@ struct AppInfoController: RouteCollection {
 
         if let byPackageName = query.byPackageName, !byPackageName.isEmpty {
             queryBuilder = queryBuilder.filter(
-                \.$packageName, .custom("ILIKE"), "%\(byPackageName)%")
+                \.$packageName, .custom("ILIKE"), "%\(byPackageName)%"
+            )
         }
 
         if let byMainActivity = query.byMainActivity, !byMainActivity.isEmpty {
             queryBuilder = queryBuilder.filter(
-                \.$mainActivity, .custom("ILIKE"), "%\(byMainActivity)%")
+                \.$mainActivity, .custom("ILIKE"), "%\(byMainActivity)%"
+            )
         }
 
         // Sort by count
@@ -150,15 +180,15 @@ struct AppInfoController: RouteCollection {
 
         // Extract and process search terms
         var searchTerms: [String] = []
-        var fullSearchQuery: String = ""
+        var fullSearchQuery = ""
 
         if let simpleQuery = query.query, !simpleQuery.isEmpty {
             fullSearchQuery = simpleQuery
             searchTerms =
                 simpleQuery
-                .split(separator: " ")
-                .map(String.init)
-                .filter { !$0.isEmpty }
+                    .split(separator: " ")
+                    .map(String.init)
+                    .filter { !$0.isEmpty }
         }
 
         // Early return if no search terms
@@ -171,7 +201,6 @@ struct AppInfoController: RouteCollection {
             _ dataQuery: SQLSelectBuilder,
             terms: [String]
         ) -> SQLSelectBuilder {
-
             let columns: [SQLColumn] = [
                 AppInfo.sqlColumn(for: \.$defaultName),
                 AppInfo.sqlColumn(for: \.$packageName),
@@ -181,16 +210,16 @@ struct AppInfoController: RouteCollection {
 
             let conditions: [SQLExpression] =
                 terms
-                .map { "%\($0)%" }
-                .flatMap { pattern in
-                    columns.map {
-                        SQLBinaryExpression(
-                            left: $0,
-                            op: SQLRaw("ILIKE"),
-                            right: SQLBind(pattern)
-                        )
+                    .map { "%\($0)%" }
+                    .flatMap { pattern in
+                        columns.map {
+                            SQLBinaryExpression(
+                                left: $0,
+                                op: SQLRaw("ILIKE"),
+                                right: SQLBind(pattern)
+                            )
+                        }
                     }
-                }
 
             guard let first = conditions.first else { return dataQuery }
 
@@ -213,7 +242,8 @@ struct AppInfoController: RouteCollection {
                         args: [
                             column,
                             SQLBind(fullSearchQuery),
-                        ]),
+                        ]
+                    ),
                     SQLLiteral.numeric("0"),
                 ]
             )
@@ -229,7 +259,8 @@ struct AppInfoController: RouteCollection {
                         AppInfo.sqlColumn(for: \.$packageName),
                         AppInfo.sqlColumn(for: \.$mainActivity),
                         AppLocalizedName.sqlColumn(for: \.$name),
-                    ].map(buildRelevanceExpression))
+                    ].map(buildRelevanceExpression)
+                ),
             ]
         )
 
@@ -242,20 +273,20 @@ struct AppInfoController: RouteCollection {
         // Build single query with window function
         var dataQuery =
             db
-            .select()
-            .column(AppInfo.sqlColumn(for: \.$id), as: "app_info_id")
-            .column(
-                SQLRaw("COUNT(*) OVER()"),  // Window function for total count
-                as: "total_count"
-            )
-            .from(AppInfo.schema)
-            .join(
-                AppLocalizedName.self,
-                method: .left,
-                on: AppLocalizedName.sqlColumn(for: \.$appInfo.$id),
-                .equal,
-                AppInfo.sqlColumn(for: \.$id)
-            )
+                .select()
+                .column(AppInfo.sqlColumn(for: \.$id), as: "app_info_id")
+                .column(
+                    SQLRaw("COUNT(*) OVER()"), // Window function for total count
+                    as: "total_count"
+                )
+                .from(AppInfo.schema)
+                .join(
+                    AppLocalizedName.self,
+                    method: .left,
+                    on: AppLocalizedName.sqlColumn(for: \.$appInfo.$id),
+                    .equal,
+                    AppInfo.sqlColumn(for: \.$id)
+                )
 
         // Add advanced filters FIRST (performance optimization)
         if let byName = query.byName, !byName.isEmpty {
@@ -293,16 +324,16 @@ struct AppInfoController: RouteCollection {
 
         let queryResults =
             try await dataQuery
-            .groupBy(AppInfo.sqlColumn(for: \.$id))
-            .orderBy(SQLOrderBy(expression: relevanceScore, direction: SQLDirection.descending))
-            .orderBy(
-                SQLOrderBy(
-                    expression: AppInfo.sqlColumn(for: \.$count), direction: SQLDirection.descending
+                .groupBy(AppInfo.sqlColumn(for: \.$id))
+                .orderBy(SQLOrderBy(expression: relevanceScore, direction: SQLDirection.descending))
+                .orderBy(
+                    SQLOrderBy(
+                        expression: AppInfo.sqlColumn(for: \.$count), direction: SQLDirection.descending
+                    )
                 )
-            )
-            .limit(per)
-            .offset(offset)
-            .all()
+                .limit(per)
+                .offset(offset)
+                .all()
 
         // Extract ordered IDs and total count
         var total = 0
@@ -347,6 +378,41 @@ struct AppInfoController: RouteCollection {
     }
 
     @Sendable
+    private func exactSingleSearch(req: Request) async throws -> AppInfoDTO {
+        let packageName = try req.query.get(String.self, at: "packageName")
+        let mainActivity = try req.query.get(String.self, at: "mainActivity")
+        if let result = try await searchByPackageAndActivityLists(
+            req: req,
+            components: [(packageName, mainActivity)]
+        ).first { return result }
+        else {
+            throw Abort(.notFound, reason: "No exact match found")
+        }
+    }
+
+    @Sendable
+    private func candidateSearch(req: Request) async throws -> [AppInfoDTO] {
+        let request = try req.content.decode(AppInfoCandidateSearchRequest.self)
+        guard request.mainActivities.count == request.packageNames.count else {
+            throw Abort(.badRequest, reason: "Mismatched package names and main activities count")
+        }
+        let components = zip(request.packageNames, request.mainActivities).map { ($0, $1) }
+        return try await searchByPackageAndActivityLists(req: req, components: components)
+    }
+
+    /// Searches for apps matching any of the package names AND any of the main activities
+    /// ⚠️ Warning: May return false positives when multiple components are provided
+    /// components: [(package name, main activity)]
+    private func searchByPackageAndActivityLists(req: Request, components: [(String, String)]) async throws -> [AppInfoDTO] {
+        return try await AppInfo.query(on: req.db)
+            .filter(\.$packageName ~~ components.map { $0.0 })
+            .filter(\.$mainActivity ~~ components.map { $0.1 })
+            .with(\.$localizedNames)
+            .all()
+            .map { $0.toDTO() }
+    }
+
+    @Sendable
     func create(req: Request) async throws -> [AppInfo] {
         let iconPackVersionId = try? req.auth.require(IconPackVersion.self).requireID()
         let creates = try req.content.decode(Set<AppInfoCreateSingleRequest>.self)
@@ -359,7 +425,7 @@ struct AppInfoController: RouteCollection {
         // 1. Batch query existing AppInfo
         let existingAppInfos = try await AppInfo.query(on: req.db)
             .group(.or) { or in
-                creates.forEach { create in
+                for create in creates {
                     or.group(.and) { and in
                         and.filter(\.$packageName == create.packageName)
                         and.filter(\.$mainActivity == create.mainActivity)
@@ -377,7 +443,8 @@ struct AppInfoController: RouteCollection {
         let existingMap: [AppInfoKey: AppInfo] = existingAppInfos.reduce(into: [:]) {
             result, appInfo in
             result[
-                AppInfoKey(packageName: appInfo.packageName, mainActivity: appInfo.mainActivity)] =
+                AppInfoKey(packageName: appInfo.packageName, mainActivity: appInfo.mainActivity)
+            ] =
                 appInfo
         }
 
@@ -397,7 +464,8 @@ struct AppInfoController: RouteCollection {
         let allAppInfosMap = (existingAppInfos + newAppInfos).reduce(into: existingMap) {
             result, appInfo in
             result[
-                AppInfoKey(packageName: appInfo.packageName, mainActivity: appInfo.mainActivity)] =
+                AppInfoKey(packageName: appInfo.packageName, mainActivity: appInfo.mainActivity)
+            ] =
                 appInfo
         }
 
@@ -447,7 +515,8 @@ struct AppInfoController: RouteCollection {
             guard let appInfoId = try? allAppInfosMap[key]?.requireID() else { return nil }
             return RequestRecord(
                 appInfoId: appInfoId, iconPackVersionId: iconPackVersionId,
-                isSystemApp: create.systemApp)
+                isSystemApp: create.systemApp
+            )
         }
         try await requestRecords.create(on: req.db)
 
@@ -484,10 +553,10 @@ struct AppInfoController: RouteCollection {
         // 2. Update or create a new localized name
         if let existingLocalizedName =
             try await AppLocalizedName
-            .query(on: req.db)
-            .filter(\.$appInfo.$id == appInfoId)
-            .filter(\.$languageCode == create.languageCode)
-            .first()
+                .query(on: req.db)
+                .filter(\.$appInfo.$id == appInfoId)
+                .filter(\.$languageCode == create.languageCode)
+                .first()
         {
             existingLocalizedName.name = create.localizedName
             try await existingLocalizedName.update(on: req.db)
@@ -503,7 +572,8 @@ struct AppInfoController: RouteCollection {
 
         // 3. Record the request
         let newRequestRecord = RequestRecord(
-            appInfoId: appInfoId, iconPackVersionId: iconPackVersionId)
+            appInfoId: appInfoId, iconPackVersionId: iconPackVersionId
+        )
         try await newRequestRecord.save(on: req.db)
 
         return appInfo.toDTO()
@@ -522,15 +592,15 @@ struct AppInfoController: RouteCollection {
         return try await req.db.transaction { transactionalDatabase in
             guard
                 let appInfo = try await AppInfo.query(on: transactionalDatabase)
-                    .filter(\.$id == appInfoId)
-                    .first()
+                .filter(\.$id == appInfoId)
+                .first()
             else {
                 throw Abort(.notFound, reason: "App not found")
             }
 
             guard
                 let tag =
-                    try await Tag
+                try await Tag
                     .query(on: transactionalDatabase)
                     .filter(\.$id == taggingRequest.tagID)
                     .first()
@@ -541,8 +611,7 @@ struct AppInfoController: RouteCollection {
             if taggingRequest.remove {
                 try await appInfo.$tags.detach(tag, on: transactionalDatabase)
             } else {
-                try await appInfo.$tags.attach(tag, method: .ifNotExists, on: transactionalDatabase)
-                {
+                try await appInfo.$tags.attach(tag, method: .ifNotExists, on: transactionalDatabase) {
                     $0.$createdBy.id = designerID
                 }
             }
@@ -559,9 +628,9 @@ struct AppInfoController: RouteCollection {
 
         guard
             let appInfo = try await AppInfo.query(on: req.db)
-                .filter(\.$id == appInfoId)
-                .with(\.$tags)
-                .first()
+            .filter(\.$id == appInfoId)
+            .with(\.$tags)
+            .first()
         else {
             throw Abort(.notFound, reason: "App not found")
         }
