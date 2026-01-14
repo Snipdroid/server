@@ -41,7 +41,7 @@ public func configure(_ app: Application) async throws {
     }
     await app.jwt.keys.add(hmac: HMACKey(from: jwtSecret), digestAlgorithm: .sha256)
 
-    app.databases.use(
+    try app.databases.use(
         DatabaseConfigurationFactory.postgres(
             configuration: .init(
                 hostname: Environment.get("DATABASE_HOST") ?? "localhost",
@@ -50,12 +50,15 @@ public func configure(_ app: Application) async throws {
                 username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
                 password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
                 database: Environment.get("DATABASE_NAME") ?? "vapor_database",
-                tls: .prefer(try .init(configuration: .clientDefault)))
-        ), as: .psql)
+                tls: .prefer(.init(configuration: .clientDefault))
+            )
+        ), as: .psql
+    )
 
     app.views.use(.leaf)
     app.leaf.sources = LeafSources.singleSource(DynamicLeafSource.global)
 
+    app.routes.defaultMaxBodySize = "1mb"
     try await migrations(app)
     // register routes
     try routes(app)
