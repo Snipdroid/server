@@ -19,8 +19,8 @@ struct OIDCAuthenticator: AsyncBearerAuthenticator {
             throw Abort(.unauthorized, reason: "Invalid token issuer")
         }
 
-        // Validate audience
-        guard payload.audience.value.contains(oidcConfig.audience) else {
+        // Validate audience (token must contain at least one of the configured audiences)
+        guard oidcConfig.audiences.contains(where: { payload.audience.value.contains($0) }) else {
             throw Abort(.unauthorized, reason: "Invalid token audience")
         }
 

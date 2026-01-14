@@ -17,7 +17,7 @@ struct OIDCConfig: Sendable {
     let issuer: String
     let jwksURL: String
     let userinfoURL: String
-    let audience: String
+    let audiences: [String]
 }
 
 extension Application {
@@ -38,6 +38,9 @@ extension Application {
     }
 
     func configureOIDC(issuer: String, audience: String) async throws {
+        // Parse comma-separated audiences
+        let audiences = audience.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+
         // Fetch discovery document
         let discoveryURL = "\(issuer)/.well-known/openid-configuration"
         let response = try await self.client.get(URI(string: discoveryURL))
@@ -64,7 +67,7 @@ extension Application {
             issuer: issuer,
             jwksURL: discovery.jwksUri,
             userinfoURL: discovery.userinfoEndpoint,
-            audience: audience
+            audiences: audiences
         )
     }
 }
