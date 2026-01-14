@@ -6,13 +6,13 @@ struct IconPackVersionController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let iconPack =
             routes
-            .grouped("icon-pack", ":iconPackId")
-            .grouped(OIDCAuthenticator())
+                .grouped("icon-pack", ":iconPackId")
+                .grouped(OIDCAuthenticator())
 
         let version =
             routes
-            .grouped("icon-pack", ":iconPackId", "version", ":versionId")
-            .grouped(OIDCAuthenticator())
+                .grouped("icon-pack", ":iconPackId", "version", ":versionId")
+                .grouped(OIDCAuthenticator())
 
         iconPack
             .post("version", "create", use: createVersion)
@@ -28,9 +28,9 @@ struct IconPackVersionController: RouteCollection {
             .openAPI(
                 summary: "List icon pack versions",
                 description: """
-                    List all versions for an icon pack,
-                    sorted by creation date in descending order
-                    """,
+                List all versions for an icon pack,
+                sorted by creation date in descending order
+                """,
                 query: .type(PageRequest.self),
                 response: .type(Page<IconPackVersionDTO>.self)
             )
@@ -72,10 +72,10 @@ struct IconPackVersionController: RouteCollection {
         // Verify the icon pack exists and belongs to the designer
         guard
             try await IconPack.query(on: req.db)
-                .join(Designer.self, on: \IconPack.$designer.$id == \Designer.$id)
-                .filter(\IconPack.$id == iconPackId)
-                .filter(Designer.self, \.$id == designerId)
-                .first() != nil
+            .join(Designer.self, on: \IconPack.$designer.$id == \Designer.$id)
+            .filter(\IconPack.$id == iconPackId)
+            .filter(Designer.self, \.$id == designerId)
+            .first() != nil
         else {
             throw Abort(.notFound)
         }
@@ -85,16 +85,17 @@ struct IconPackVersionController: RouteCollection {
         // Ensure the version does not already exist for this icon pack
         guard
             try await IconPackVersion.query(on: req.db)
-                .filter(\.$iconPack.$id == iconPackId)
-                .filter(\.$versionString == create.versionString)
-                .first() == nil
+            .filter(\.$iconPack.$id == iconPackId)
+            .filter(\.$versionString == create.versionString)
+            .first() == nil
         else {
             throw InternalError.violationOfUniqueConstraint(IconPackVersion.self)
         }
 
         // Create the version
         let newVersion = IconPackVersion(
-            iconPackId: iconPackId, versionString: create.versionString)
+            iconPackId: iconPackId, versionString: create.versionString
+        )
         try await newVersion.save(on: req.db)
 
         return newVersion.toDTO()
@@ -107,28 +108,29 @@ struct IconPackVersionController: RouteCollection {
 
         let iconPackId = try req.parameters.require("iconPackId", as: UUID.self)
 
-        // Verify ownership and fetch versions in a single query
-        let versions = try await IconPackVersion.query(on: req.db)
-            .join(IconPack.self, on: \IconPackVersion.$iconPack.$id == \IconPack.$id)
+        // verify ownership and
+        guard try await IconPack.query(on: req.db)
             .join(IconPackCollaborators.self, on: \IconPack.$id == \IconPackCollaborators.$iconPack.$id, method: .left)
-            .join(Designer.self, on: \IconPackCollaborators.$collaborator.$id == \Designer.$id, method: .left)
-            .filter(\IconPackVersion.$iconPack.$id == iconPackId)
-            .group(
-                .or,
-                { group in
-                    group
-                        .filter(IconPack.self, \.$designer.$id == designerId)
-                        .filter(Designer.self, \.$id == designerId)
-                }
-            )
+            .filter(\.$id == iconPackId)
+            .group(.or, { group in
+                group.filter(\.$designer.$id == designerId)
+                group.filter(IconPackCollaborators.self, \.$collaborator.$id == designerId)
+            })
+            .first() != nil
+        else {
+            throw Abort(.forbidden, reason: "You do not have access to this icon pack.")
+        }
+
+        // fetch versions in a single query
+        let versions = try await IconPackVersion.query(on: req.db)
+            .filter(\.$iconPack.$id == iconPackId)
             .paginate(for: req)
 
         return versions.map { $0.toDTO() }
     }
 
     @Sendable
-    func requestsOfVersion(req: Request) async throws -> Page<IconPackVersionRequestRecordResponse>
-    {
+    func requestsOfVersion(req: Request) async throws -> Page<IconPackVersionRequestRecordResponse> {
         let includingAdapted = try req.query.get(Bool.self, at: "includingAdapted")
 
         let version = try await requireAuthorizedVersion(req: req, on: req.db, requireOwner: false)
@@ -148,13 +150,13 @@ struct IconPackVersionController: RouteCollection {
 
         return
             try await query
-            .paginate(for: req)
-            .map { requestRecord in
-                let iconPackApp = try? requestRecord.joined(IconPackApp.self)
-                return IconPackVersionRequestRecordResponse(
-                    requestRecord: requestRecord.toDTO(), iconPackApp: iconPackApp?.toDTO()
-                )
-            }
+                .paginate(for: req)
+                .map { requestRecord in
+                    let iconPackApp = try? requestRecord.joined(IconPackApp.self)
+                    return IconPackVersionRequestRecordResponse(
+                        requestRecord: requestRecord.toDTO(), iconPackApp: iconPackApp?.toDTO()
+                    )
+                }
     }
 
     @Sendable
@@ -193,27 +195,27 @@ struct IconPackVersionController: RouteCollection {
 
         guard
             let iconPackVersion = try await IconPackVersion.query(on: db)
-                .join(IconPack.self, on: \IconPackVersion.$iconPack.$id == \IconPack.$id)
-                .join(
-                    IconPackCollaborators.self,
-                    on: \IconPack.$id == \IconPackCollaborators.$iconPack.$id, method: .left
-                )
-                .join(
-                    Designer.self, on: \IconPackCollaborators.$collaborator.$id == \Designer.$id,
-                    method: .left
-                )
-                .filter(IconPack.self, \.$id == iconPackId)
-                .filter(\IconPackVersion.$id == iconPackVersionId)
-                .group(
-                    .or,
-                    {
-                        $0.filter(IconPack.self, \.$designer.$id == designerId)
-                        if !requireOwner {
-                            $0.filter(Designer.self, \.$id == designerId)
-                        }
+            .join(IconPack.self, on: \IconPackVersion.$iconPack.$id == \IconPack.$id)
+            .join(
+                IconPackCollaborators.self,
+                on: \IconPack.$id == \IconPackCollaborators.$iconPack.$id, method: .left
+            )
+            .join(
+                Designer.self, on: \IconPackCollaborators.$collaborator.$id == \Designer.$id,
+                method: .left
+            )
+            .filter(IconPack.self, \.$id == iconPackId)
+            .filter(\IconPackVersion.$id == iconPackVersionId)
+            .group(
+                .or,
+                {
+                    $0.filter(IconPack.self, \.$designer.$id == designerId)
+                    if !requireOwner {
+                        $0.filter(Designer.self, \.$id == designerId)
                     }
-                )
-                .first()
+                }
+            )
+            .first()
         else {
             throw Abort(.notFound)
         }
