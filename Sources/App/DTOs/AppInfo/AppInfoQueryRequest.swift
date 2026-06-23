@@ -20,19 +20,7 @@ struct AppInfoQueryRequest: Content {
 
 }
 
-enum SortOption: String, Codable, CaseIterable, OpenAPIType {
+enum SortOption: String, Codable, CaseIterable {
     case relevance
     case count
-
-    static var openAPISchema: SchemaObject {
-        SchemaObject(
-            description: """
-                Sort options for query results:
-                • relevance - Sort by similarity/relevance score first, then by count
-                • count - Sort by popularity (request count) first (default)
-                """,
-            enum: allCases.map { AnyValue.string($0.rawValue) },
-            context: .string
-        )
-    }
 }
