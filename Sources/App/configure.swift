@@ -1,8 +1,6 @@
 import Fluent
 import FluentPostgresDriver
 import JWT
-import Leaf
-import LeafKit
 import NIOSSL
 import QueuesRedisDriver
 import SotoS3
@@ -54,9 +52,6 @@ public func configure(_ app: Application) async throws {
             )
         ), as: .psql
     )
-
-    app.views.use(.leaf)
-    app.leaf.sources = LeafSources.singleSource(DynamicLeafSource.global)
 
     app.routes.defaultMaxBodySize = "1mb"
     try await migrations(app)

@@ -45,4 +45,21 @@ enum JSONValue: Codable, Sendable, OpenAPIType {
         case .null: try container.encodeNil()
         }
     }
+
+    var mustacheValue: Any {
+        switch self {
+        case .string(let value):
+            value
+        case .number(let value):
+            value
+        case .bool(let value):
+            value
+        case .object(let value):
+            value.mapValues(\.mustacheValue)
+        case .array(let value):
+            value.map(\.mustacheValue)
+        case .null:
+            NSNull()
+        }
+    }
 }
